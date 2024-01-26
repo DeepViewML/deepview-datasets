@@ -6,10 +6,7 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
-from deepview.nn.datasets.readers.core import BaseReader
-
-class DeepVieweader(BaseReader):
-    pass
-
-class DeepViewDetectionReader(DeepVieweader):
-    pass
+from deepview.nn.datasets.readers.core import       BaseReader
+from deepview.nn.datasets.readers.darknet import    DarknetReader, \
+                                                    DarknetDetectionReader
+from deepview.nn.datasets.readers.arrow import     PolarsDetectionReader
