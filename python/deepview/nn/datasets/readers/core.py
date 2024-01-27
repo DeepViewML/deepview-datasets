@@ -110,6 +110,7 @@ class BaseReader(Iterable):
             
         element = self[self.__current__]
         self.__current__ += 1
+
         return element
     
     def __iter__(self):
@@ -122,5 +123,3 @@ class BaseReader(Iterable):
         """
         return self
         
-        
-    

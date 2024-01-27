@@ -100,24 +100,11 @@ class PolarsDetectionReader(BaseReader):
         bboxes = np.asarray(bboxes.to_list(), dtype=np.float32)
         classes = np.asarray(classes.cast(pl.Categorical).to_physical(), dtype=np.int32)
         classes = classes[:, None]
-        boxes = np.concatenate([bboxes, classes], axis=1)
         
+        if len(bboxes) == 0:
+            return image, np.zeros(shape=(1, 5), dtype=np.float32)
+        
+        boxes = np.concatenate([bboxes, classes], axis=1)
         return image, boxes
 
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    import cv2
-    
-    train_reader_polars = PolarsDetectionReader(
-        inputs="demos/python/playingcards-polars/train/images_*.arrow",
-        annotations="demos/python/playingcards-polars/train/boxes_*.arrow",
-        classes=["ace", "five"]
-    )
-
-    print(train_reader_polars.classes, len(train_reader_polars))
-    
-    for image, boxes in train_reader_polars:
-        
-        print(image)
     
