@@ -208,24 +208,3 @@ class TFObjectDetectionIterator(BaseIterator):
 
         return ds_iter
 
-
-
-if __name__ == '__main__':
-
-    from deepview.nn.datasets.readers import PolarsDetectionReader
-
-    reader = PolarsDetectionReader(
-        inputs = "/home/reinier/development/deepview-datasets/demos/python/playingcards-polars/train/images_*.arrow",
-        annotations = "/home/reinier/development/deepview-datasets/demos/python/playingcards-polars/train/boxes_*.arrow"
-    )
-
-    iterator = TFObjectDetectionIterator(
-        reader=reader,
-        shape=(320, 320, 3)
-    )
-
-    for instance in iterator.iterator():
-        images = instance['images']
-        boxes = instance['boxes']
-        # print(images.shape, boxes.shape)
-
