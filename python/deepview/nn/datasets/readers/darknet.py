@@ -15,6 +15,12 @@ from tqdm import tqdm
 import numpy as np
 
 
+
+try:
+    import tensorflow as tf
+except ImportError:
+    pass
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class DarknetReader(BaseReader):
@@ -302,7 +308,44 @@ class DarknetDetectionReader(DarknetReader):
         raise RuntimeError(
             f"Something when wrong with annotation file: {ann_file}"
         )
+
+class TFDarknetDetectionReader(DarknetDetectionReader):
+    
+    def get_item(self, item):
+        image, boxes =  super().__getitem__(item)
+        boxes = tf.constant(boxes.tolist(), dtype=tf.float32)
+
+        return image, boxes    
+    
+    @tf.function
+    def __getitem__(
+            self, 
+            item: int
+    ) -> dict:
+        """
+        This funciton return instance ``item`` as ragged tensors
+
+        Parameters
+        ----------
+        item : int
+            Instance id
+
+        Returns
+        -------
+        dict
+            A python dictionary containing all the instance elements as ``tf.ragged.constant``
+        """
+
+        image, boxes = tf.py_function(
+            self.get_item,
+            [item],
+            Tout=(tf.uint8, tf.float32)
+        )
         
+        return {
+            "image": image,
+            "bounding_boxes": boxes
+        }
 
 class DarknetSegmentationReader(DarknetReader):
     def __getitem__(
@@ -312,13 +355,3 @@ class DarknetSegmentationReader(DarknetReader):
         pass
 
 
-
-if __name__ == '__main__':
-    reader = DarknetDetectionReader(
-        images="/home/reinier/development/modelpack-radar/datasets/modelpack/playing-cards-files/images/train",
-        annotations="/home/reinier/development/modelpack-radar/datasets/modelpack/playing-cards-files/labels/train",
-        classes=["ace", "nine", "six", "four", "eight", "queen", "seven", "king", "ten","jack", "five", "two","three"]
-    )
-    
-    for image, boxes in reader:
-        print(image.shape, boxes.shape)

@@ -11,6 +11,10 @@ from typing import Iterable
 import polars as pl
 import numpy as np
 
+try:
+    import tensorflow as tf
+except ImportError:
+    pass
 
 class PolarsDetectionReader(BaseReader):
     """
@@ -86,7 +90,16 @@ class PolarsDetectionReader(BaseReader):
     def classes(self):
         return self.__classes__
 
-    
+    def get_boxes_dimensions(self):
+        """
+        Returns the bounfing box with and height for each annotation box within the dataset.
+        Useful for anchors computations
+        """
+        boxes = self.__annotations__.select(pl.col("box2d")).collect()['box2d'].to_list()
+        boxes = np.asarray(boxes, dtype=np.float32)
+        dimensions = boxes[:, [2, 3]]
+        return dimensions
+
     def __getitem__(
         self, 
         item: int
@@ -107,4 +120,33 @@ class PolarsDetectionReader(BaseReader):
         boxes = np.concatenate([bboxes, classes], axis=1)
         return image, boxes
 
+
+class TFPolarsDetectionReader(PolarsDetectionReader):
+        
+    def get_item(self, item):
+        return  super().__getitem__(item)
     
+    @tf.function
+    def __getitem__(
+            self, 
+            item: int
+    ) -> tuple:
+        """
+        This funciton return instance ``item``
+
+        Parameters
+        ----------
+        item : int
+            Instance id
+
+        Returns
+        -------
+        tuple
+            A tuple containing all the data for a single instance
+        """
+
+        return tf.py_function(
+            self.get_item,
+            [item],
+            Tout=(tf.uint8, tf.float32)
+        )

@@ -1,4 +1,4 @@
 tensorflow==2.13.0
 pillow==10.2.0
 polars==0.20.5
-tqdm=4.66.1
+tqdm==4.66.1

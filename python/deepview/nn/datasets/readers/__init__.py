@@ -8,5 +8,7 @@
 
 from deepview.nn.datasets.readers.core import       BaseReader
 from deepview.nn.datasets.readers.darknet import    DarknetReader, \
-                                                    DarknetDetectionReader
-from deepview.nn.datasets.readers.arrow import     PolarsDetectionReader
+                                                    DarknetDetectionReader, \
+                                                    TFDarknetDetectionReader
+from deepview.nn.datasets.readers.arrow import      PolarsDetectionReader, \
+                                                    TFPolarsDetectionReader

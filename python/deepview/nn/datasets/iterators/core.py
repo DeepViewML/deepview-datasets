@@ -56,6 +56,26 @@ class BaseIterator(object):
         if shuffle:
             random.shuffle(self.__annotation_ids__)
 
+    @property
+    def shape(self):
+        return self.__shape__
+
+    @property
+    def height(self) -> int:
+        return self.__shape__[0]
+    
+    @property
+    def width(self) -> int:
+        return self.__shape__[1]
+
+    @property
+    def channels(self) -> int:
+        return self.__shape__[2]
+
+    @property
+    def reader(self):
+        return self.__reader__
+
     def __getitem__(
         self, 
         item: int

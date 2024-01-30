@@ -9,16 +9,17 @@
 from deepview.nn.datasets.iterators.core import BaseIterator
 from deepview.nn.datasets.readers import BaseReader
 from typing import Any, Iterable
-import cv2
 
-
+try:
+    import cv2
+except ImportError:
+    pass
 
 try:
 
     import os
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     import tensorflow as tf
-
 except ImportError:
     pass
 
@@ -27,7 +28,7 @@ class ObjectDetectionIterator(BaseIterator):
     Abstract class for Object Detection dataset iterators
     """
 
-    def __getitem__(self, item: int) -> Any:
+    def __getitem__(self, item: int) -> tuple:
         """
         This function returns the elemnt at position ``item``
 
@@ -38,18 +39,10 @@ class ObjectDetectionIterator(BaseIterator):
 
         Returns
         -------
-        dict
-            A python dictionary with the following structure: {"image": np.ndarray, "boxes": np.ndarray}
+        tuple
+            A tuple containing all the elements from the same instance
         """
-        instance = super().__getitem__(item)
-        
-        instance = {
-            "image": cv2.resize(instance[0], (self.__shape__[1], self.__shape__[0])),
-            "boxes": instance[1]
-        }
-
-        return instance
-
+        return super().__getitem__(item)
 
 
 class TFObjectDetectionIterator(BaseIterator):
@@ -61,21 +54,9 @@ class TFObjectDetectionIterator(BaseIterator):
         self, 
         reader: BaseReader, 
         shape: Iterable, 
-        batch_size: int,
         shuffle: bool = False,
         cache: str = None
     ) -> None:
-        super().__init__(reader, shape, shuffle)
-
-        self.__cache__ = cache
-        if batch_size < 0:
-            raise ValueError(
-                f"Batch size  smaller than 0 is not alloed: {batch_size} as provided"
-            )
-        
-        self.__batch_size__ = batch_size
-        self.__num_batches__ = len(self) //  batch_size if batch_size > 1 else len(self)
-
         """
         Class constructor
 
@@ -85,8 +66,6 @@ class TFObjectDetectionIterator(BaseIterator):
             An instance of a dataset reader
         shape : Iterable
             Any iterable in the form (height, width, channels)
-        batch_size : int
-            Number of elements per batch. If the value is 0, iterator will return elements instead of batches
         shuffle :  bool, optional
             Whether to shuffle or not dataset
         cache : str, optional
@@ -104,20 +83,12 @@ class TFObjectDetectionIterator(BaseIterator):
         ValueError
             In case ``batch_size < 0``
         """
-    @property
-    def batch_size(self):
-        """
-        Returns the batch-size
-        """
-        return self.__batch_size__
-    
-    @property
-    def num_batches(self):
-        """
-        returns the number of batches in the dataset
+        
+        super().__init__(reader, shape, shuffle)
+        self.__cache__ = cache
 
-        """
-        return self.__num_batches__
+    def get_boxes_dimensions(self) -> list:
+        return self.reader.get_boxes_dimensions()
 
     @property
     def cache(self) -> str:
@@ -126,29 +97,11 @@ class TFObjectDetectionIterator(BaseIterator):
         """
         return self.__cache__
 
-    @tf.function
-    def get_item(self, item):
-        """
-        This function wraps a python function (``__getitem__``) in eager execution
 
-        Parameters
-        ----------
-        item : tf.Tensor
-            A tensor representation of item
-
-        Returns
-        -------
-        tuple
-            A tuple containing the resized image and the bounding boxes
-        """
-        image, boxes = tf.py_function(
-            self.__getitem__,
-            inp=[item],
-            Tout=(tf.uint8, tf.float32)
-        )
-        image.set_shape(tf.TensorShape(self.__shape__))
-        image = tf.image.resize(image, [320, 320])
-
+    def __getitem__(self, item: int) -> Any:
+        image, boxes = super().reader[item]
+        image.set_shape(self.shape)
+        image = tf.image.resize(image, (self.height, self.width))
         return image, boxes
 
     def iterator(
@@ -167,27 +120,7 @@ class TFObjectDetectionIterator(BaseIterator):
 
         """
         
-        
-        tf_ids = tf.ragged.constant(self.__annotation_ids__)
-
-        ds_iter = tf.data.Dataset.from_tensor_slices(tf_ids)
-        
-        if self.__shuffle__:
-            ds_iter = ds_iter.shuffle(
-                ds_iter.cardinality(), 
-                reshuffle_each_iteration=True
-            )
-        
-        ds_iter = ds_iter.map(
-            self.get_item, 
-            num_parallel_calls=tf.data.AUTOTUNE
-        ).map(
-            lambda x, y: {
-                "images": x, 
-                "boxes": y
-            },
-            num_parallel_calls=tf.data.AUTOTUNE
-        )
+        ds_iter = tf.data.Dataset.from_tensor_slices(self.__annotation_ids__)
         
         if self.cache is not None:
             ds_iter = ds_iter.cache(
@@ -195,16 +128,46 @@ class TFObjectDetectionIterator(BaseIterator):
             )
         else:
             ds_iter = ds_iter.cache()
-
-        if self.batch_size > 1:
-            ds_iter = ds_iter.padded_batch(
-                self.batch_size,
-                padded_shapes={
-                    "images": self.__shape__,
-                    "boxes": [None, 5]
-                },
-                drop_remainder=True
+        
+        if self.__shuffle__:
+            ds_iter = ds_iter.shuffle(
+                ds_iter.cardinality(), 
+                reshuffle_each_iteration=True
             )
+
+        ds_iter = ds_iter.map(
+            self.__getitem__, 
+            num_parallel_calls=tf.data.AUTOTUNE
+        )
 
         return ds_iter
 
+
+if __name__ == '__main__':
+    from deepview.nn.datasets.readers import TFPolarsDetectionReader
+
+    reader = TFPolarsDetectionReader(
+        inputs = "/home/reinier/development/deepview-datasets/demos/python/playingcards-polars/train/images_*.arrow",
+        annotations = "/home/reinier/development/deepview-datasets/demos/python/playingcards-polars/train/boxes_*.arrow"
+    )
+    
+    # Loading dataset cache into memory
+    iterator = TFObjectDetectionIterator(
+        reader=reader,
+        shape=(480, 640, 3),
+        cache="/home/reinier/development/deepview-datasets/demos/python/playingcards-polars/tf-cache-2"
+    )
+
+    import time
+
+    print("measuring augmentation speed...")
+    num_iters = len(iterator)
+
+    st = time.time()
+    
+    for i, instance in enumerate(iterator.iterator()):
+        images = instance[0]
+        boxes = instance[1]
+        print(images.shape, boxes.shape)
+    ed = time.time()
+    print(f"{1 / ((ed - st) / num_iters) * 9:.3f} FPS")
