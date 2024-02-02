@@ -92,9 +92,8 @@ class PolarsDetectionWriter(PolarsWriter):
         """
         
         image, annotations = instance
-        shape = pl.Series("shape", [list(image.shape)], dtype=pl.List(pl.Int32))
-        img = pl.Series("image", [image.reshape(-1)], dtype=pl.List(pl.UInt8))
-        image_data_frame = pl.DataFrame({'id': key, "data": img, "shape": shape})
+        img = pl.Series("image", [image], dtype=pl.List(pl.UInt8))
+        image_data_frame = pl.DataFrame({'id': key, "data": img})
         
         if len(annotations) == 0:
             return image_data_frame, None

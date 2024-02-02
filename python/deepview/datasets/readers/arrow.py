@@ -9,7 +9,9 @@
 from deepview.datasets.readers.core import BaseReader
 from typing import Iterable
 import polars as pl
+from PIL import Image
 import numpy as np
+import io
 
 try:
     import tensorflow as tf
@@ -109,8 +111,10 @@ class PolarsDetectionReader(BaseReader):
     ) -> tuple:
         instance_id = self.__annotations_ids__[item]
         
-        image, shape = self.__inputs__.filter(pl.col("id").eq(instance_id)).select([pl.col("data"), pl.col("shape")]).collect()
-        image = np.asarray(image.item(), dtype=np.uint8).reshape(shape.item(0)).copy()
+        data = self.__inputs__.filter(pl.col("id").eq(instance_id)).select(pl.col("data")).collect().item().to_list()
+        data = np.asarray(data, dtype=np.uint8)
+        image = Image.open(io.BytesIO(data))
+        image = np.asarray(image, dtype=np.uint8)
         
         bboxes, classes = self.__annotations__.filter(
                 pl.col("id").eq(instance_id)
