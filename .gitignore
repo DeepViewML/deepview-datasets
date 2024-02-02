@@ -127,6 +127,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+demos/python/coco*
+demos/playingcards/*
 
 # Spyder project settings
 .spyderproject

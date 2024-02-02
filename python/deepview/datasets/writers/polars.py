@@ -7,8 +7,8 @@
 # Modifying or copying any source code is explicitly forbidden.
 
 
-from deepview.nn.datasets.writers.core import BaseWriter
-from deepview.nn.datasets.readers.core import BaseReader
+from deepview.datasets.writers.core import BaseWriter
+from deepview.datasets.readers.core import BaseReader
 from os.path import join
 import polars as pl
 import numpy as np
@@ -105,18 +105,20 @@ class PolarsDetectionWriter(PolarsWriter):
         cat_names = np.asarray(self.__reader__.classes)[
             labels.astype(np.int32)
         ].flatten().tolist()
-        
-        annotations_data_frame = pl.DataFrame({
-            "id": key,
-            "class": pl.Series("class", cat_names, dtype=pl.Categorical),
-            "box2d": [
-                pl.Series("box2d", b.tolist(), dtype=pl.Float32) for b in boxes
-            ],
-        })
+
+        with pl.StringCache():
+            annotations_data_frame = pl.DataFrame({
+                "id": key,
+                "class": pl.Series("class", cat_names, dtype=pl.Categorical),
+                "box2d": [
+                    pl.Series("box2d", b.tolist(), dtype=pl.Float32) for b in boxes
+                ],
+            })
         
         return image_data_frame, annotations_data_frame
 
     def export(self) -> None:
+        pl.enable_string_cache()
         
         df_images           = None
         df_annotations      = None
@@ -157,10 +159,10 @@ class PolarsDetectionWriter(PolarsWriter):
         
         fname = 'boxes_{file_id:0{width}}.arrow'.format(file_id=1, width=max_string_padd)
         df_annotations.write_ipc(join(
-            self.__output__, 
-            fname
-        ))
-            
+                self.__output__, 
+                fname
+            ))
+                
         if df_images is not None:
             fname = 'images_{file_id:0{width}}.arrow'.format(file_id=file_size_counter, width=max_string_padd)
             df_images.write_ipc(join(
@@ -168,24 +170,3 @@ class PolarsDetectionWriter(PolarsWriter):
                 fname
             ))
         
-                
-                
-            
-
-
-if __name__ == '__main__':
-    
-    
-    reader = DarknetDetectionReader(
-        images="/home/reinier/development/modelpack-radar/datasets/modelpack/playing-cards-files/images/validate",
-        annotations="/home/reinier/development/modelpack-radar/datasets/modelpack/playing-cards-files/labels/validate",
-        classes=["ace", "nine", "six", "four", "eight", "queen", "seven", "king", "ten","jack", "five", "two","three"]
-    )
-    
-    writer = PolarsDetectionExporter(
-        reader=reader,
-        output="/home/reinier/tmp/datasets/plating-cards/val",
-        override=True
-    )
-    
-    writer.export()

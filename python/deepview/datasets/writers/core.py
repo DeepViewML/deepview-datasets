@@ -6,7 +6,7 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
-from deepview.nn.datasets.readers.core import BaseReader
+from deepview.datasets.readers.core import BaseReader
 from os.path import exists
 from os import makedirs
 from typing import Any

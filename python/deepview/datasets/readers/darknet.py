@@ -6,14 +6,14 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
-from deepview.nn.datasets.readers.core import BaseReader
+from deepview.datasets.readers.core import BaseReader
 from os.path import join, exists, splitext, basename
 from typing import Union, Iterable
 from PIL import Image, ImageFile
 from glob import glob
 from tqdm import tqdm
 import numpy as np
-
+import polars as pl
 
 
 try:
@@ -289,7 +289,11 @@ class DarknetDetectionReader(DarknetReader):
         if ann_file is None:
             return image, np.asarray([], dtype=np.float32)
         
-        boxes = np.genfromtxt(ann_file)
+        try:
+            boxes = pl.read_csv(ann_file, has_header=False, separator=" ").to_numpy()
+        except pl.exceptions.NoDataError:
+            return image, np.asarray([], dtype=np.float32) 
+        
         if len(boxes) == 0:
             return image, np.asarray([], dtype=np.float32)
         
@@ -336,16 +340,11 @@ class TFDarknetDetectionReader(DarknetDetectionReader):
             A python dictionary containing all the instance elements as ``tf.ragged.constant``
         """
 
-        image, boxes = tf.py_function(
+        return tf.py_function(
             self.get_item,
             [item],
             Tout=(tf.uint8, tf.float32)
         )
-        
-        return {
-            "image": image,
-            "bounding_boxes": boxes
-        }
 
 class DarknetSegmentationReader(DarknetReader):
     def __getitem__(

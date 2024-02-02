@@ -6,10 +6,7 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
-from deepview.nn.datasets.readers.core import BaseReader
 
-class PascalVOCReader(BaseReader):
-    pass
-
-class PascalVOCDetectionReader(PascalVOCReader):
-    pass
+from deepview.datasets.writers.core import BaseWriter
+from deepview.datasets.writers.polars import PolarsWriter, \
+                                                PolarsDetectionWriter

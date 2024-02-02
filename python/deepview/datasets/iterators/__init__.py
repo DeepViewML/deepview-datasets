@@ -6,13 +6,6 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
-from deepview.nn.datasets.readers.core import BaseReader
-
-class CocoReader(BaseReader):
-    pass
-
-class CocoDetectionReader(CocoReader):
-    pass
-
-class CocoSegmentationReader(CocoReader):
-    pass
+from deepview.datasets.iterators.core import         BaseIterator
+from deepview.datasets.iterators.detection import    ObjectDetectionIterator, \
+                                                        TFObjectDetectionIterator

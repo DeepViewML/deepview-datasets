@@ -6,6 +6,10 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
-from deepview.nn.datasets.iterators.core import         BaseIterator
-from deepview.nn.datasets.iterators.detection import    ObjectDetectionIterator, \
-                                                        TFObjectDetectionIterator
+from deepview.datasets.readers.core import BaseReader
+
+class PascalVOCReader(BaseReader):
+    pass
+
+class PascalVOCDetectionReader(PascalVOCReader):
+    pass

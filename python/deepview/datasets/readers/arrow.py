@@ -6,7 +6,7 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
-from deepview.nn.datasets.readers.core import BaseReader
+from deepview.datasets.readers.core import BaseReader
 from typing import Iterable
 import polars as pl
 import numpy as np
@@ -67,18 +67,21 @@ class PolarsDetectionReader(BaseReader):
             inputs
         )
         
-        self.__annotations__ = pl.scan_ipc(
+        self.__annotations__ = pl.read_ipc(
             annotations
         )
+        
+        self.__annotations_ids__ = self.__inputs__.select(pl.col("id")).collect()["id"].to_list()
+        
         if classes is None:
-            self.__classes__ = self.__annotations__.select(pl.col("class")).unique().collect()['class'].to_list()
-            self.__annotations_ids__ = self.__inputs__.select(pl.col("id")).collect()["id"].to_list()
+            self.__classes__ = self.__annotations__["class"].unique().to_list()
         else:
             self.__classes__ = classes
-            self.__annotations_ids__ = self.__annotations__.filter(
-                    pl.col("class").is_in(classes)
-                ).select(pl.col("id")).collect().unique()["id"].to_list()
+            # self.__annotations_ids__ = self.__annotations__.filter(
+            #         pl.col("class").is_in(classes)
+            #     ).select(pl.col("id")).unique().to_series().to_list()
         
+        self.__class_order__ = pl.Enum(self.__classes__)
         
         self.__size__ = len(self.__annotations_ids__)
         self.__current__ = 0
@@ -95,7 +98,7 @@ class PolarsDetectionReader(BaseReader):
         Returns the bounfing box with and height for each annotation box within the dataset.
         Useful for anchors computations
         """
-        boxes = self.__annotations__.select(pl.col("box2d")).collect()['box2d'].to_list()
+        boxes = self.__annotations__.select(pl.col("box2d")).to_series().to_list()
         boxes = np.asarray(boxes, dtype=np.float32)
         dimensions = boxes[:, [2, 3]]
         return dimensions
@@ -109,9 +112,16 @@ class PolarsDetectionReader(BaseReader):
         image, shape = self.__inputs__.filter(pl.col("id").eq(instance_id)).select([pl.col("data"), pl.col("shape")]).collect()
         image = np.asarray(image.item(), dtype=np.uint8).reshape(shape.item(0)).copy()
         
-        bboxes, classes = self.__annotations__.filter(pl.col("id").eq(instance_id)).select([pl.col("box2d"), pl.col("class")]).collect()
+        bboxes, classes = self.__annotations__.filter(
+                pl.col("id").eq(instance_id)
+            ).filter(
+                pl.col("class").is_in(self.__classes__)
+            ).select(
+                [pl.col("box2d"), pl.col("class")]
+            )
+        
         bboxes = np.asarray(bboxes.to_list(), dtype=np.float32)
-        classes = np.asarray(classes.cast(pl.Categorical).to_physical(), dtype=np.int32)
+        classes = np.asarray(classes.cast(self.__class_order__).to_physical(), dtype=np.int32)
         classes = classes[:, None]
         
         if len(bboxes) == 0:

@@ -6,9 +6,9 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
-from deepview.nn.datasets.readers.core import       BaseReader
-from deepview.nn.datasets.readers.darknet import    DarknetReader, \
+from deepview.datasets.readers.core import       BaseReader
+from deepview.datasets.readers.darknet import    DarknetReader, \
                                                     DarknetDetectionReader, \
                                                     TFDarknetDetectionReader
-from deepview.nn.datasets.readers.arrow import      PolarsDetectionReader, \
+from deepview.datasets.readers.arrow import      PolarsDetectionReader, \
                                                     TFPolarsDetectionReader

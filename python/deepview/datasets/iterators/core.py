@@ -7,7 +7,7 @@
 # Modifying or copying any source code is explicitly forbidden.
 
 
-from deepview.nn.datasets.readers import BaseReader
+from deepview.datasets.readers import BaseReader
 from typing import Iterable, Any
 import random
 
@@ -23,7 +23,7 @@ class BaseIterator(object):
 
         Parameters
         ----------
-        reader : deepview.nn.datasets.reader.BaseReader
+        reader : deepview.datasets.reader.BaseReader
             An instance of a dataset reader
         shape : Iterable
             Any iterable in the form (height, width, channels)

@@ -6,8 +6,8 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
-from deepview.nn.datasets.iterators.core import BaseIterator
-from deepview.nn.datasets.readers import BaseReader
+from deepview.datasets.iterators.core import BaseIterator
+from deepview.datasets.readers import BaseReader
 from typing import Any, Iterable
 
 try:
@@ -62,7 +62,7 @@ class TFObjectDetectionIterator(BaseIterator):
 
         Parameters
         ----------
-        reader : deepview.nn.datasets.reader.BaseReader
+        reader : deepview.datasets.reader.BaseReader
             An instance of a dataset reader
         shape : Iterable
             Any iterable in the form (height, width, channels)
@@ -141,33 +141,3 @@ class TFObjectDetectionIterator(BaseIterator):
         )
 
         return ds_iter
-
-
-if __name__ == '__main__':
-    from deepview.nn.datasets.readers import TFPolarsDetectionReader
-
-    reader = TFPolarsDetectionReader(
-        inputs = "/home/reinier/development/deepview-datasets/demos/python/playingcards-polars/train/images_*.arrow",
-        annotations = "/home/reinier/development/deepview-datasets/demos/python/playingcards-polars/train/boxes_*.arrow"
-    )
-    
-    # Loading dataset cache into memory
-    iterator = TFObjectDetectionIterator(
-        reader=reader,
-        shape=(480, 640, 3),
-        cache="/home/reinier/development/deepview-datasets/demos/python/playingcards-polars/tf-cache-2"
-    )
-
-    import time
-
-    print("measuring augmentation speed...")
-    num_iters = len(iterator)
-
-    st = time.time()
-    
-    for i, instance in enumerate(iterator.iterator()):
-        images = instance[0]
-        boxes = instance[1]
-        print(images.shape, boxes.shape)
-    ed = time.time()
-    print(f"{1 / ((ed - st) / num_iters) * 9:.3f} FPS")

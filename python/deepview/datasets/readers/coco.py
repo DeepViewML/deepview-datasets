@@ -6,7 +6,13 @@
 # This source code is provided solely for runtime interpretation by Python.
 # Modifying or copying any source code is explicitly forbidden.
 
+from deepview.datasets.readers.core import BaseReader
 
-from deepview.nn.datasets.writers.core import BaseExporter
-from deepview.nn.datasets.writers.polars import PolarsWriter, \
-                                                PolarsDetectionWriter
+class CocoReader(BaseReader):
+    pass
+
+class CocoDetectionReader(CocoReader):
+    pass
+
+class CocoSegmentationReader(CocoReader):
+    pass
