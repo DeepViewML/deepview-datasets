@@ -38,8 +38,8 @@ class PolarsDetectionReader(BaseReader):
         Parameters
         -----------
         inputs : str
-            Path containing the model input data. For example, in a detection model,
-            the inputs are going to be the path to ``images_*.arrow``
+            Path containing the model input data. For example, in a detection
+            model, the inputs are going to be the path to ``images_*.arrow``
 
 
         annotations : Union[str, Iterable]
@@ -47,7 +47,8 @@ class PolarsDetectionReader(BaseReader):
             containing the path to all the
 
         classes:  Union[str, Iterable]
-            Either of a list containing the name of the classes or the path to a file containing the classes
+            Either of a list containing the name of the classes or the path to
+            a file containing the classes
 
         silent : bool, optional, default False
              Whether printing to the console or not, by default False
@@ -55,7 +56,8 @@ class PolarsDetectionReader(BaseReader):
         Raises
         ------
         FileNotFoundError
-            An exception is thrown in case path to images or annotations does not exist
+            An exception is thrown in case path to images or annotations does
+            not exist
 
         Return
         ------
@@ -78,9 +80,6 @@ class PolarsDetectionReader(BaseReader):
             self.__classes__ = self.__annotations__["class"].unique().to_list()
         else:
             self.__classes__ = classes
-            # self.__annotations_ids__ = self.__annotations__.filter(
-            #         pl.col("class").is_in(classes)
-            #     ).select(pl.col("id")).unique().to_series().to_list()
 
         self.__class_order__ = pl.Enum(self.__classes__)
 
@@ -96,8 +95,8 @@ class PolarsDetectionReader(BaseReader):
 
     def get_boxes_dimensions(self):
         """
-        Returns the bounfing box with and height for each annotation box within the dataset.
-        Useful for anchors computations
+        Returns the bounfing box with and height for each annotation box within
+        the dataset. Useful for anchors computations
         """
         boxes = self.__annotations__.select(
             pl.col("box2d")).to_series().to_list()

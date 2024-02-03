@@ -52,7 +52,8 @@ class DarknetReader(BaseReader):
             containing the path to all the
 
         classes:  Union[str, Iterable]
-            Either of a list containing the name of the classes or the path to a file containing the classes
+            Either of a list containing the name of the classes or the path to
+            a file containing the classes
 
         silent : bool, optional, default False
              Whether printing to the console or not, by default False
@@ -60,7 +61,8 @@ class DarknetReader(BaseReader):
         Raises
         ------
         FileNotFoundError
-            An exception is thrown in case path to images or annotations does not exist
+            An exception is thrown in case path to images or annotations does
+            not exist
 
         Return
         ------
@@ -80,7 +82,9 @@ class DarknetReader(BaseReader):
                 )
 
             image_files = []
-            for ext in ['*.[pP][nN][gG]', '*.[jJ][pP][gG]', '*.[jJ][pP][eE][gG]']:
+            for ext in ['*.[pP][nN][gG]',
+                        '*.[jJ][pP][gG]',
+                        '*.[jJ][pP][eE][gG]']:
                 partial = glob(join(images, ext))
                 image_files = image_files + partial
             self.images = image_files
@@ -149,7 +153,8 @@ class DarknetReader(BaseReader):
         item: int
     ) -> tuple:
         """
-        This function reads the content from the image file and returns a tuple with the following structure:
+        This function reads the content from the image file and returns a tuple
+        with the following structure:
 
         Example:
 
@@ -158,7 +163,8 @@ class DarknetReader(BaseReader):
                 image, annotation_path   = reader[0]
 
                 # image: np.ndarray with internal type np.uint8 (Image content)
-                # annotation_path: Path to the annotation file. This is handled by specific child Reader classes
+                # annotation_path: Path to the annotation file. This is handled
+                # by specific child Reader classes
                 # ``DarknetDetectionReader`` and ``DarknetSegmentationReader``
 
 
@@ -170,7 +176,8 @@ class DarknetReader(BaseReader):
         Returns
         -------
         tuple
-            (np.ndarray(np.uint8), str): image content and path to annotation file
+            (np.ndarray(np.uint8), str): image content and path to annotation
+            file
         """
         instance = super().__getitem__(item)
         image = np.fromfile(instance[0], dtype=np.uint8)
@@ -199,7 +206,8 @@ class DarknetDetectionReader(DarknetReader):
             containing the path to all the
 
         classes:  Union[str, Iterable]
-            Either of a list containing the name of the classes or the path to a file containing the classes
+            Either of a list containing the name of the classes or the path to
+            a file containing the classes
 
         silent : bool, optional, default False
              Whether printing to the console or not, by default False
@@ -211,7 +219,8 @@ class DarknetDetectionReader(DarknetReader):
         Raises
         ------
         FileNotFoundError
-            An exception is thrown in case path to images or annotations does not exist
+            An exception is thrown in case path to images or annotations does
+            not exist
 
         Return
         ------
@@ -261,11 +270,13 @@ class DarknetDetectionReader(DarknetReader):
     ) -> tuple:
         """
 
-        This function calls base class to read image from file and read annotations from file.
-        The function will returns the image content as a np.ndarray(np.uint8) and a np.ndarray(np.float32) for boxes.
+        This function calls base class to read image from file and read
+        annotations from file. The function will returns the image content as a
+        np.ndarray(np.uint8) and a np.ndarray(np.float32) for boxes.
 
-        Image is RGB and boxes will be a multidimensional array with shape  (N, 5).
-        Boxes will be internally ordered as specified in ``out_format`` constructor parameter plus the class index at the end
+        Image is RGB and boxes will be a multidimensional array with shape
+        (N, 5). Boxes will be internally ordered as specified in ``out_format``
+        constructor parameter plus the class index at the end
 
         Parameters
         ----------
@@ -275,7 +286,8 @@ class DarknetDetectionReader(DarknetReader):
         Returns
         -------
         tuple
-            A tuple containing the real values of a single instance for object detection. The image and bounding boxes.
+            A tuple containing the real values of a single instance for object
+            detection. The image and bounding boxes.
         """
         image, ann_file = super().__getitem__(item)
 
@@ -332,7 +344,8 @@ class TFDarknetDetectionReader(DarknetDetectionReader):
         Returns
         -------
         dict
-            A python dictionary containing all the instance elements as ``tf.ragged.constant``
+            A python dictionary containing all the instance elements as
+                ``tf.ragged.constant``
         """
 
         return tf.py_function(

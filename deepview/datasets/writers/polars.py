@@ -30,7 +30,8 @@ class PolarsWriter(BaseWriter):
         override : bool, optional
            Whether to override the folder or not, by default False
         max_file_size: float, optional
-            Maximum size in GB per file to be stored into arrow format, by default 2.
+            Maximum size in GB per file to be stored into arrow format, by
+            default 2.
         """
         super().__init__(reader, output, override)
 
@@ -38,7 +39,8 @@ class PolarsWriter(BaseWriter):
 
     @property
     def max_file_size(self):
-        """Returns the maximum size allowed (GB) per dataset chunk. Only taken into consideration for polars subclasses
+        """Returns the maximum size allowed (GB) per dataset chunk. Only taken
+        into consideration for polars subclasses
 
         Returns
         -------
@@ -49,8 +51,8 @@ class PolarsWriter(BaseWriter):
 
     def write_instance(self, instance: tuple):
         """
-        This function creates a pl.DataFrame from the tuple. The child writer class needs to be in agreement with the
-        reader.
+        This function creates a pl.DataFrame from the tuple. The child writer
+        class needs to be in agreement with the reader.
 
         Parameters
         ----------
@@ -67,9 +69,10 @@ class PolarsDetectionWriter(PolarsWriter):
         key: str
     ) -> tuple:
         """
-        This function creates a pl.DataFrame from a tuple instance. The first element on the instance is the image
-        and the second one are boxes. The function will create an image pl.DataFrame as well as a pl.DataFrame for
-        boxes
+        This function creates a pl.DataFrame from a tuple instance. The first
+        element on the instance is the image and the second one are boxes. The
+        function will create an image pl.DataFrame as well as a pl.DataFrame
+        for boxes
 
         Parameters
         ----------
@@ -82,7 +85,8 @@ class PolarsDetectionWriter(PolarsWriter):
         Return
         ------
         tuple
-            A tuple containing the image data frame as first position and annotations data frame in the second one
+            A tuple containing the image data frame as first position and
+            annotations data frame in the second one
 
         """
 

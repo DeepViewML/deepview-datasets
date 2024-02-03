@@ -12,8 +12,8 @@ from tqdm import tqdm
 
 class BaseWriter(object):
     """
-    This class controls the flow of the reader and creates the global behavior of
-    an exporter
+    This class controls the flow of the reader and creates the global behavior
+    of an exporter
     """
 
     def __init__(
@@ -64,7 +64,8 @@ class BaseWriter(object):
     ) -> Any:
         """
 
-        THis function returns the iterator associated to a progressbar ready to use for child classes
+        THis function returns the iterator associated to a progressbar ready to
+        use for child classes
 
         Returns
         -------

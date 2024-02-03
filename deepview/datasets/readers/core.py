@@ -25,7 +25,8 @@ class BaseReader(Iterable):
         Parameters
         ----------
         classes:  Union[str, Iterable]
-            Either of a list containing the name of the classes or the path to a file containing the classes
+            Either of a list containing the name of the classes or the path to
+            a file containing the classes
         silent : bool, optional
             Whether printing to the console or not, by default False
         """
@@ -62,7 +63,8 @@ class BaseReader(Iterable):
         Returns
         -------
         list
-            List that contains all the instances. Values within the list will be dataset specific
+            List that contains all the instances. Values within the list will
+            be dataset specific
         """
         return self.__storage__
 
@@ -82,8 +84,9 @@ class BaseReader(Iterable):
         item: int
     ) -> tuple:
         """
-        Returns the instance at ``item`` index. At this level the function only knows file names.
-        Child classes should be able to override this function and return data from files
+        Returns the instance at ``item`` index. At this level the function only
+        knows file names. Child classes should be able to override this
+        function and return data from files
 
         Parameters
         ----------

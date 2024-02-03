@@ -88,8 +88,8 @@ class BaseIterator(object):
         Returns
         -------
         tuple
-            A two elements tuple containing data used for model input in the first
-            position and labels in the second one
+            A two elements tuple containing data used for model input in the
+            first position and labels in the second one
         """
         return self.__reader__[item]
 

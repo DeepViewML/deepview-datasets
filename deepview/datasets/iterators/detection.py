@@ -7,13 +7,8 @@ from deepview.datasets.iterators.core import BaseIterator
 from deepview.datasets.readers import BaseReader
 from typing import Any, Iterable
 
-try:
-    import cv2
-except ImportError:
-    pass
 
 try:
-
     import os
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     import tensorflow as tf
@@ -68,11 +63,12 @@ class TFObjectDetectionIterator(BaseIterator):
         shuffle :  bool, optional
             Whether to shuffle or not dataset
         cache : str, optional
-            Whether to use a cache on file or not. If cache is a path, then TensorFlow will use it for
-            storing metadata. Otherwise, cache is going to be in memory. In case the dataset is larger
-            than memory, TensorFlow will interrupt the training and raise and Error.
+            Whether to use a cache on file or not. If cache is a path, then
+            TensorFlow will use it for storing metadata. Otherwise, cache is
+            going to be in memory. In case the dataset is larger than memory,
+            TensorFlow will interrupt the training and raise and Error.
 
-            Note: Make sure the application has write permissions on cache folder
+            Note: Make sure the application has write permissions on cache dir
         Raises
         ------
         ValueError
@@ -114,7 +110,8 @@ class TFObjectDetectionIterator(BaseIterator):
         Returns
         -------
         tf.data.Dataset
-            A batched dataset wrapped into a dictionary format: ``{"images": images, "boxes": boxes}``
+            A batched dataset wrapped into a dictionary format:
+                ``{"images": images, "boxes": boxes}``
 
         """
 
