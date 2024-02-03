@@ -1,15 +1,12 @@
-# Copyright 2022 by Au-Zone Technologies.  All Rights Reserved.
+# Copyright 2024 by Au-Zone Technologies.  All Rights Reserved.
 #
-# Unauthorized copying of this file, via any medium is strictly prohibited
-# Proprietary and confidential.
-#
-# This source code is provided solely for runtime interpretation by Python.
-# Modifying or copying any source code is explicitly forbidden.
-
+#  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
+#    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
 from deepview.datasets.readers import BaseReader
 from typing import Iterable, Any
 import random
+
 
 class BaseIterator(object):
     def __init__(
@@ -29,7 +26,7 @@ class BaseIterator(object):
             Any iterable in the form (height, width, channels)
         shuffle :  bool, optional
             Whether to shuffle or not dataset
-        
+
         Raises
         ------
         ValueError
@@ -37,21 +34,21 @@ class BaseIterator(object):
         ValueError
             In case shape is invalid or None
         """
-        
+
         if reader is None:
             raise ValueError(
                 "``None`` reader was provided"
             )
-        if shape is None or len(shape) !=3:
+        if shape is None or len(shape) != 3:
             raise ValueError(
                 f"Unsupported shape was provided: {shape}"
             )
-        self.__reader__         = reader
-        self.__shape__          = shape
-        self.__shuffle__        = shuffle
+        self.__reader__ = reader
+        self.__shape__ = shape
+        self.__shuffle__ = shuffle
         self.__annotation_ids__ = list(range(len(self.__reader__)))
-        self.__current__        = 0
-        self.__size__           = len(self.__reader__)
+        self.__current__ = 0
+        self.__size__ = len(self.__reader__)
 
         if shuffle:
             random.shuffle(self.__annotation_ids__)
@@ -63,7 +60,7 @@ class BaseIterator(object):
     @property
     def height(self) -> int:
         return self.__shape__[0]
-    
+
     @property
     def width(self) -> int:
         return self.__shape__[1]
@@ -77,7 +74,7 @@ class BaseIterator(object):
         return self.__reader__
 
     def __getitem__(
-        self, 
+        self,
         item: int
     ) -> Any:
         """
@@ -91,7 +88,7 @@ class BaseIterator(object):
         Returns
         -------
         tuple
-            A two elements tuple containing data used for model input in the first 
+            A two elements tuple containing data used for model input in the first
             position and labels in the second one
         """
         return self.__reader__[item]
@@ -113,10 +110,10 @@ class BaseIterator(object):
         """
         if self.__current__ >= self.__size__:
             raise StopIteration
-            
+
         element = self[self.__current__]
         self.__current__ += 1
-        
+
         return element
 
     def iterator(self) -> Any:

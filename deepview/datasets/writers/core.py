@@ -1,10 +1,7 @@
-# Copyright 2022 by Au-Zone Technologies.  All Rights Reserved.
+# Copyright 2024 by Au-Zone Technologies.  All Rights Reserved.
 #
-# Unauthorized copying of this file, via any medium is strictly prohibited
-# Proprietary and confidential.
-#
-# This source code is provided solely for runtime interpretation by Python.
-# Modifying or copying any source code is explicitly forbidden.
+#  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
+#    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
 from deepview.datasets.readers.core import BaseReader
 from os.path import exists
@@ -12,11 +9,13 @@ from os import makedirs
 from typing import Any
 from tqdm import tqdm
 
+
 class BaseWriter(object):
     """
     This class controls the flow of the reader and creates the global behavior of
     an exporter
     """
+
     def __init__(
         self,
         reader: BaseReader,
@@ -35,20 +34,19 @@ class BaseWriter(object):
         override : bool, optional
             Whether to override the folder or not, by default False
         """
-        
-        
+
         if override:
             print(
                 f"\t - [WARNING] Output directory is not empty. Exporter will override existing content: {output}"
             )
             makedirs(output, exist_ok=True)
-            
-        if not exists(output):    
+
+        if not exists(output):
             makedirs(output)
-            
+
         self.__reader__ = reader
         self.__output__ = output
-        
+
     @property
     def output(self):
         """
@@ -60,13 +58,12 @@ class BaseWriter(object):
             Path to store the dataset
         """
         return self.__output__
-    
-    
+
     def export(
         self
     ) -> Any:
         """
-        
+
         THis function returns the iterator associated to a progressbar ready to use for child classes
 
         Returns
@@ -74,12 +71,12 @@ class BaseWriter(object):
         Any
             A ``tqdm.tqdm`` iterator
         """
-        
+
         loop = tqdm(
-            self.__reader__, 
+            self.__reader__,
             desc="\t [INFO] Writing",
             colour="green",
             bar_format='{l_bar}{bar:15}{r_bar}{bar:-15b}'
         )
-        
+
         return loop
