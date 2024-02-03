@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deepview-datasets"
-version = "0.1.1"
+version = "0.1.2"
 description = "DeepView Datasets"
 readme = "README.md"
 authors = [{ name = "Au-Zone Technologies", email = "info@au-zone.com" }]
@@ -42,7 +42,7 @@ packages = [
 ]
 
 [tool.bumpver]
-current_version = "0.1.1"
+current_version = "0.1.2"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message  = "Update version {old_version} -> {new_version}"
 commit          = true
