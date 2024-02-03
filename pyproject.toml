@@ -38,7 +38,7 @@ packages = [
     "deepview.datasets",
     "deepview.datasets.iterators",
     "deepview.datasets.readers",
-    "deepview.datasets",
+    "deepview.datasets.writers",
 ]
 
 [tool.bumpver]
