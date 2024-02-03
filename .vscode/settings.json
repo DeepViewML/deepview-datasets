@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "DeepViewML",
+        "projectKey": "DeepViewML_deepview-datasets"
+    }
+}
