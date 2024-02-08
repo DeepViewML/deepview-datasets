@@ -129,6 +129,7 @@ env.bak/
 venv.bak/
 demos/python/coco*
 demos/playingcards/*
+.vscode/*
 
 # Spyder project settings
 .spyderproject
