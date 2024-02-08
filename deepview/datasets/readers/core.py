@@ -36,12 +36,22 @@ class BaseReader(Iterable):
         self.__current__ = -1
         self.__size__ = 0
         self.__classes__ = []
-
+        self.__instance_id__ = None
+        
         if isinstance(classes, str):
             with open(classes, 'r') as fp:
                 self.__classes__ = [cls.rstrip() for cls in fp.readlines()]
         else:
             self.__classes__ = classes
+
+        
+    
+    def get_instance_id(self):
+        if self.__instance_id__ is None:
+            raise RuntimeWarning(
+                "self.__instance_id__ is None. Bad property initialization"
+            )
+        return self.__instance_id__
 
     @property
     def classes(self):
@@ -99,7 +109,6 @@ class BaseReader(Iterable):
             A tuple containing all the files that represent a single instance
 
         """
-
         return self.__storage__[item]
 
     def __next__(self):

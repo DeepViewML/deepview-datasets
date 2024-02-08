@@ -179,7 +179,11 @@ class DarknetReader(BaseReader):
             (np.ndarray(np.uint8), str): image content and path to annotation
             file
         """
+
+
         instance = super().__getitem__(item)
+        self.__instance_id__ = splitext(basename(instance[0]))[0]
+        
         image = np.fromfile(instance[0], dtype=np.uint8)
         return image, instance[1]
 

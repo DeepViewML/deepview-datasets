@@ -109,7 +109,8 @@ class PolarsDetectionReader(BaseReader):
         item: int
     ) -> tuple:
         instance_id = self.__annotations_ids__[item]
-
+        self.__instance_id__ = instance_id
+        
         data = self.__inputs__.filter(pl.col("id").eq(instance_id)).select(
             pl.col("data")).collect().item().to_list()
         data = np.asarray(data, dtype=np.uint8)
