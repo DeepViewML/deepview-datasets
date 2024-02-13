@@ -20,12 +20,12 @@ classifiers = [
 ]
 keywords = ["feed", "reader", "tutorial"]
 dependencies = [
-    'tensorflow~=2.15.0',
+    'tensorflow >= 2.13.0',
     'pillow~=10.2.0',
     'polars~=0.20.5',
     'tqdm~=4.66.1',
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 
 [project.optional-dependencies]
 dev = ["bumpver"]
