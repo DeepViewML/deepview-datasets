@@ -129,6 +129,7 @@ env.bak/
 venv.bak/
 demos/python/coco*
 demos/playingcards/*
+.vscode/*
 
 # Spyder project settings
 .spyderproject
@@ -156,8 +157,8 @@ cython_debug/
 
 *.arrow
 
-demos/python/playingcards/
-demos/python/playingcards-polars
+demos/*
+.vscode/*
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore

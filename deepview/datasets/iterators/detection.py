@@ -134,5 +134,4 @@ class TFObjectDetectionIterator(BaseIterator):
             self.__getitem__,
             num_parallel_calls=tf.data.AUTOTUNE
         )
-
         return ds_iter
