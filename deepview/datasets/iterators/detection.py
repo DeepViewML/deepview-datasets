@@ -115,6 +115,8 @@ class TFObjectDetectionIterator(BaseIterator):
 
         """
 
+        print(self.__annotation_ids__)
+
         ds_iter = tf.data.Dataset.from_tensor_slices(self.__annotation_ids__)
 
         if self.cache is not None:
