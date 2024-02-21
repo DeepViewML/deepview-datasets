@@ -137,3 +137,11 @@ class TFObjectDetectionIterator(BaseIterator):
             num_parallel_calls=tf.data.AUTOTUNE
         )
         return ds_iter
+
+class TFObjectDetectionIterator:
+    """
+    This class defines the functionalities for all custom dataset that loads any reader, auto-discovery reader.
+    """
+    def __init__(self) -> None:
+        pass
+    
