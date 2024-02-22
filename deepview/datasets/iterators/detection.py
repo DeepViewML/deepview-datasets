@@ -187,8 +187,9 @@ class TFObjectDetectionIterator:
         import yaml
         with open(from_config, 'r') as fp:
             self.config = yaml.safe_load(fp)
-        self.config_absolute_path = os.path.dirname(os.path.abspath(from_config))
-        
+        self.config_absolute_path = os.path.dirname(
+            os.path.abspath(from_config))
+
         self.dataset_format = None
         self.load_reader = None
 
@@ -226,15 +227,7 @@ class TFObjectDetectionIterator:
         )  # loading ModelPack 2.x dataset format
         if len(classes) > 0:
             self.dataset_format = "modelpack-2.x"
-            self.load_reader = self.__storage_from_modelpack_2x__
-            return classes
-
-        # loading ModelPack 3.x dataset format
-        dataset = self.config.get("dataset", None)
-        classes = dataset.get("classes") if dataset else []
-        if len(classes) > 0:
-            self.dataset_format = "modelpack-3.x"
-            self.load_reader = self.__storage_from_modelpack_3x__
+            self.load_reader = self.__storage_from_modelpack__
             return classes
 
         classes = self.config.get("names", [])
@@ -248,8 +241,7 @@ class TFObjectDetectionIterator:
                 of supported formats: ModelPack 2.x, ModelPack 3.x or Ultralytics"
         )
 
-    def __storage_from_modelpack_2x__(self, is_train: bool = True) -> Iterable:
-        from deepview.datasets.readers import TFDarknetDetectionReader
+    def __storage_from_modelpack__(self, is_train: bool = True) -> Iterable:
 
         dataset = self.config.get(
             "train", None) if is_train else self.config.get("validation", None)
@@ -258,33 +250,10 @@ class TFObjectDetectionIterator:
 
         images = dataset.get("images", None)
         annotations = dataset.get("annotations", None)
-        
-        images = os.path.join(self.config_absolute_path, images)
-        annotations = os.path.join(self.config_absolute_path, annotations)
-        
-        reader = TFDarknetDetectionReader(
-            images=images,
-            annotations=annotations,
-            classes=self.__classes__,
-            silent=True
-        )
-        return reader
 
-    def __storage_from_modelpack_3x__(self, is_train: bool = True) -> Iterable:
-        dataset = self.config.get("dataset")
-        
-        section = dataset.get("train", None) if is_train else dataset.get("validation", None)
-        if section is None:
-            return None
-        images = section.get("images")
-        annotations = section.get("annotations")
-        if None in [images, annotations]:
-            raise ValueError(
-                'Missing ``image`` or ``annotations`` keys on partition configuration'
-            )
         images = os.path.join(self.config_absolute_path, images)
         annotations = os.path.join(self.config_absolute_path, annotations)
-        
+
         if images.endswith("*.arrow") and annotations.endswith("*.arrow"):
             from deepview.datasets.readers import TFPolarsDetectionReader
             return TFPolarsDetectionReader(
@@ -301,9 +270,42 @@ class TFObjectDetectionIterator:
                 classes=self.__classes__,
                 silent=True
             )
-            
         return reader
-        
+
+    def __storage_from_modelpack_3x__(self, is_train: bool = True) -> Iterable:
+        dataset = self.config.get("dataset")
+
+        section = dataset.get("train", None) if is_train else dataset.get(
+            "validation", None)
+        if section is None:
+            return None
+        images = section.get("images")
+        annotations = section.get("annotations")
+        if None in [images, annotations]:
+            raise ValueError(
+                'Missing ``image`` or ``annotations`` keys on partition configuration'
+            )
+        images = os.path.join(self.config_absolute_path, images)
+        annotations = os.path.join(self.config_absolute_path, annotations)
+
+        if images.endswith("*.arrow") and annotations.endswith("*.arrow"):
+            from deepview.datasets.readers import TFPolarsDetectionReader
+            return TFPolarsDetectionReader(
+                inputs=images,
+                annotations=annotations,
+                classes=self.__classes__,
+                silent=True
+            )
+        else:
+            from deepview.datasets.readers import TFDarknetDetectionReader
+            reader = TFDarknetDetectionReader(
+                images=images,
+                annotations=annotations,
+                classes=self.__classes__,
+                silent=True
+            )
+
+        return reader
 
     def __storage_from_ultralytics__(self, is_train: bool = True) -> Iterable:
         from deepview.datasets.readers import TFUltralyticsDetectionReader
@@ -313,7 +315,7 @@ class TFObjectDetectionIterator:
             "train", None) if is_train else self.config.get("val", None)
         if dataset is None:
             return None
-        
+
         path = self.config.get("path", None)
         if dataset.endswith(".txt"):
             return TFUltralyticsDetectionReader(
@@ -324,21 +326,22 @@ class TFObjectDetectionIterator:
         else:
             basename = os.path.basename(self.config_absolute_path)
             if dataset.startswith(basename):
-                self.config_absolute_path = os.path.dirname(self.config_absolute_path)
-            
+                self.config_absolute_path = os.path.dirname(
+                    self.config_absolute_path)
+
             images = os.path.join(self.config_absolute_path, dataset)
             annotations = os.path.normpath(images).split(os.path.sep)
             annotations[-2] = "labels"
             annotations = os.path.join(*annotations)
             annotations = annotations.replace(":", ":\\")
-                
+
             return TFDarknetDetectionReader(
                 images=images,
                 annotations=annotations,
                 classes=self.__classes__,
                 silent=True
             )
-            
+
     def __get_iterator__(self, is_train: bool = True) -> BaseIterator:
         """This function returns the Iterator instance according to the dataset format
 
@@ -379,7 +382,7 @@ class TFObjectDetectionIterator:
             In case the training iterator is None. Training set is mandatory
         """
         train_handler = self.__get_iterator__(is_train=True)
-        
+
         if train_handler is None:
             raise RuntimeError(
                 "Training dataset was not properly loaded from source."
