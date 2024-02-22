@@ -137,7 +137,7 @@ class TFBaseObjectDetectionIterator(BaseIterator):
         return ds_iter
 
 
-class TFObjectDetectionDataset:
+class TFObjectDetectionIterator:
     def __init__(
         self,
         from_config: str,
