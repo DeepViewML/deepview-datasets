@@ -6,7 +6,7 @@
 from deepview.datasets.iterators.core import BaseIterator
 from deepview.datasets.readers import BaseReader
 from typing import Any, Iterable
-
+import yaml
 
 try:
     import os
@@ -137,11 +137,7 @@ class TFBaseObjectDetectionIterator(BaseIterator):
         return ds_iter
 
 
-class TFObjectDetectionIterator:
-    """
-    This class defines the functionalities for all custom dataset that loads any reader, auto-discovery reader.
-    """
-
+class TFObjectDetectionDataset:
     def __init__(
         self,
         from_config: str,
