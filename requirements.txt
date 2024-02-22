@@ -1,5 +1,5 @@
-tensorflow~=2.15.0
-pillow~=10.2.0
+tensorflow[and-cuda]~=2.15.0
+pillow==10.2.0
 polars~=0.20.5
 tqdm~=4.66.1
 PyYAML~=6.0.1
