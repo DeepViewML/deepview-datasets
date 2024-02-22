@@ -6,7 +6,7 @@
 from deepview.datasets.iterators.core import BaseIterator
 from deepview.datasets.readers import BaseReader
 from typing import Any, Iterable
-
+import yaml
 
 try:
     import os
@@ -137,3 +137,96 @@ class TFObjectDetectionIterator(BaseIterator):
             num_parallel_calls=tf.data.AUTOTUNE
         )
         return ds_iter
+
+
+class TFObjectDetectionDataset:
+    def __init__(
+        self,
+        config: dict = None
+    ) -> None:
+        if config is None:
+            raise RuntimeError("Empty configuration file was provided")
+        
+        self.__config__ = config
+        self.__train_images__ = None
+        self.__train_annotations__ = None
+
+        self.__val_images__ = None
+        self.__val_annotations__ = None
+        self.__classes__ = None
+
+        self.__train_iterator__ = None
+        self.__val_iterator__ = None
+
+        self.load_from_config()
+
+    @property
+    def classes(self) -> Iterable:
+        return self.__classes__
+    
+    @property
+    def config(self) -> dict:
+        return self.__config__
+
+    def load_from_config(self):
+        classes = self.__config__.get("classes", None])
+        if classes:
+            # load mpk 3.0 dataset for training and validation
+            self.__classes__ = classes
+            return
+
+        from_file = self.__config__.get("config-file", None)
+        config = None
+        if from_file and os.path.exists(from_file):
+            with open(from_file, 'r') as fp:
+                config = yaml.safe_load(fp)
+        
+        if config is None:
+            raise ValueError(
+                "``config-file`` is missing from dataset definition or file does not exist"
+            )
+        
+        classes = config.get("classes", None)            
+        if classes:
+            # Load dataset from a config file related with MPK 2.x
+            self.__classes__ = classes
+            train = config.get("train", None)
+            val = config.get("validation", None)
+
+            if train:
+                train_images = train.get("images", None)
+                train_annotations = train.get("annotations", None)
+                if train_images and os.path.exists(train_images):
+                    self.__train_images__ = train_images
+                else:
+                    print(
+                        f"\t - [WARNING] Path to training images was not found: {train_images}"
+                    )
+                
+                if train_annotations and os.path.exists(train_annotations):
+                    self.__train_annotations__ = train_annotations
+                else:
+                    print(
+                        f"\t - [WARNING] Path to training annotations was not found: {train_annotations}"
+                    )
+
+            else:
+                print(
+                    "\t - [WARNING] No training section was provided. Reade ModelPack 2.x dataset documentation"
+                )
+            
+
+
+            return
+        
+        classes = config.get("names", None)
+        if classes:
+            # load from yolov-x x > 4 family yaml file
+            return 
+
+
+    def get_train_iterator(self) -> tf.data.Dataset:
+        pass
+
+    def get_val_iterator(self) -> tf.data.Dataset:
+        pass
