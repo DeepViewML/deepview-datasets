@@ -138,10 +138,66 @@ class TFObjectDetectionIterator(BaseIterator):
         )
         return ds_iter
 
+
 class TFObjectDetectionIterator:
     """
     This class defines the functionalities for all custom dataset that loads any reader, auto-discovery reader.
     """
-    def __init__(self) -> None:
-        pass
-    
+
+    def __init__(
+        self,
+        from_config: Any = None
+    ) -> None:
+
+        self.config = from_config
+
+        if self.config is None:
+            raise ValueError(
+                "Dataset can not be loaded when `from_config` parameter is `None`"
+            )
+
+        if os.path.isfile(from_config) and not from_config.endswith(".yaml"):
+            raise ValueError(
+                f"Configuration file specified at `from_config` has to be a yaml file: {from_config}"
+            )
+
+        if os.path.isfile(from_config) and not os.path.exists(from_config):
+            raise FileNotFoundError(
+                f"Configuration file provided at `frmo_config` parameter does not exist: {from_config}"
+            )
+
+        if os.path.isfile(from_config):
+            import yaml
+            with open(from_config, 'r') as fp:
+                self.config = yaml.safe_load(fp)
+
+        self.dataset_format = None
+        self.__classes__ = self.load_classes()
+        
+
+    def load_classes(self) -> Iterable:
+        """
+        This function reads class names from the configuration attribute
+        """
+        classes = self.config.get(
+            "classes", [])  # loading ModelPack 2.x dataset format
+        if len(classes) > 0:
+            self.dataset_format = "modelpack-2.x"
+            return classes
+
+        # loading ModelPack 3.x dataset format
+        dataset = self.config.get("dataset", None)
+        classes = dataset.get("classes") if dataset else []
+        if len(classes) > 0:
+            self.dataset_format = "modelpack-3.x"
+            return classes
+
+        classes = self.config.get("names", [])
+        if len(classes) > 0:
+            self.dataset_format = "ultralytics"
+            return classes
+
+        raise RuntimeError(
+            "Dataset format was not autodetected. It is does not follow neither\
+                of supported formats: ModelPack 2.x, ModelPack 3.x or Ultralytics"
+        )
