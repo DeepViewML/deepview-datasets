@@ -47,9 +47,7 @@ class TFBaseObjectDetectionIterator(BaseIterator):
     def __init__(
         self,
         reader: BaseReader,
-        shape: Iterable,
-        shuffle: bool = False,
-        cache: str = None
+        shape: Iterable
     ) -> None:
         """
         Class constructor
@@ -60,15 +58,7 @@ class TFBaseObjectDetectionIterator(BaseIterator):
             An instance of a dataset reader
         shape : Iterable
             Any iterable in the form (height, width, channels)
-        shuffle :  bool, optional
-            Whether to shuffle or not dataset
-        cache : str, optional
-            Whether to use a cache on file or not. If cache is a path, then
-            TensorFlow will use it for storing metadata. Otherwise, cache is
-            going to be in memory. In case the dataset is larger than memory,
-            TensorFlow will interrupt the training and raise and Error.
-
-            Note: Make sure the application has write permissions on cache dir
+        
         Raises
         ------
         ValueError
@@ -79,18 +69,11 @@ class TFBaseObjectDetectionIterator(BaseIterator):
             In case ``batch_size < 0``
         """
 
-        super().__init__(reader, shape, shuffle)
-        self.__cache__ = cache
+        super().__init__(reader, shape, False)
 
     def get_boxes_dimensions(self) -> list:
         return self.reader.get_boxes_dimensions()
 
-    @property
-    def cache(self) -> str:
-        """
-        Property that enables the safety reading of cache attribute
-        """
-        return self.__cache__
 
     def __getitem__(self, item: int) -> Any:
         image, boxes = super().reader[item]
@@ -116,19 +99,6 @@ class TFBaseObjectDetectionIterator(BaseIterator):
         """
 
         ds_iter = tf.data.Dataset.from_tensor_slices(self.__annotation_ids__)
-
-        if self.cache is not None:
-            ds_iter = ds_iter.cache(
-                self.cache
-            )
-        else:
-            ds_iter = ds_iter.cache()
-
-        if self.__shuffle__:
-            ds_iter = ds_iter.shuffle(
-                ds_iter.cardinality(),
-                reshuffle_each_iteration=True
-            )
 
         ds_iter = ds_iter.map(
             self.__getitem__,
@@ -333,11 +303,10 @@ class TFObjectDetectionIterator:
             self.training_reader = reader
         else:
             self.val_reader = reader
+            
         return TFBaseObjectDetectionIterator(
             reader=reader,
-            shape=self.shape,
-            shuffle=is_train,
-            cache=self.cache if is_train else None
+            shape=self.shape
         )
 
     
