@@ -194,6 +194,7 @@ class TFObjectDetectionIterator:
         self.load_reader = None
 
         self.__classes__ = self.load_classes()
+        self.training_reader = None
 
     @property
     def classes(self) -> Iterable:
@@ -272,41 +273,6 @@ class TFObjectDetectionIterator:
             )
         return reader
 
-    def __storage_from_modelpack_3x__(self, is_train: bool = True) -> Iterable:
-        dataset = self.config.get("dataset")
-
-        section = dataset.get("train", None) if is_train else dataset.get(
-            "validation", None)
-        if section is None:
-            return None
-        images = section.get("images")
-        annotations = section.get("annotations")
-        if None in [images, annotations]:
-            raise ValueError(
-                'Missing ``image`` or ``annotations`` keys on partition configuration'
-            )
-        images = os.path.join(self.config_absolute_path, images)
-        annotations = os.path.join(self.config_absolute_path, annotations)
-
-        if images.endswith("*.arrow") and annotations.endswith("*.arrow"):
-            from deepview.datasets.readers import TFPolarsDetectionReader
-            return TFPolarsDetectionReader(
-                inputs=images,
-                annotations=annotations,
-                classes=self.__classes__,
-                silent=True
-            )
-        else:
-            from deepview.datasets.readers import TFDarknetDetectionReader
-            reader = TFDarknetDetectionReader(
-                images=images,
-                annotations=annotations,
-                classes=self.__classes__,
-                silent=True
-            )
-
-        return reader
-
     def __storage_from_ultralytics__(self, is_train: bool = True) -> Iterable:
         from deepview.datasets.readers import TFUltralyticsDetectionReader
         from deepview.datasets.readers import TFDarknetDetectionReader
@@ -361,6 +327,10 @@ class TFObjectDetectionIterator:
             The iterator ready to be consumed by the training iterators. Note: data is not batched or augmented at this point
         """
         reader = self.load_reader(is_train=is_train)
+        if is_train:
+            self.training_reader = reader
+        else:
+            self.val_reader = reader
         return TFBaseObjectDetectionIterator(
             reader=reader,
             shape=self.shape,
@@ -368,6 +338,8 @@ class TFObjectDetectionIterator:
             cache=self.cache
         )
 
+    
+    
     def get_train_iterator(self) -> BaseIterator:
         """This function creates the Train iterator and return it
 
@@ -399,3 +371,14 @@ class TFObjectDetectionIterator:
             An iterator loaded from validation partition.
         """
         return self.__get_iterator__(is_train=False)
+
+    def get_boxes_dimensions(self) -> Iterable:
+        """This function returns all the pairs width,height from bounding boxes in the training 
+        set to compute anchors
+
+        Returns
+        -------
+        Iterable
+            The Iterable instance containing pairs of width,height
+        """
+        return self.training_reader.get_boxes_dimensions()

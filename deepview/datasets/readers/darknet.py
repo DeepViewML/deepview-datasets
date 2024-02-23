@@ -331,6 +331,9 @@ class DarknetDetectionReader(DarknetReader):
         raise RuntimeError(
             f"Something when wrong with annotation file: {ann_file}"
         )
+    
+    
+        
 
 
 class TFDarknetDetectionReader(DarknetDetectionReader):
@@ -366,7 +369,15 @@ class TFDarknetDetectionReader(DarknetDetectionReader):
             [item],
             Tout=(tf.uint8, tf.float32)
         )
-
+    
+    def get_boxes_dimensions(self) -> np.ndarray:
+        import os
+        
+        ann_file = self.annotations[0]
+        ann_file = os.path.dirname(ann_file) + "/*.txt"
+        boxes = pl.read_csv(ann_file, has_header=False,
+                                separator=" ").to_numpy()
+        return boxes[:, [3, 4]]
 
 class TFUltralyticsDetectionReader(TFDarknetDetectionReader):
     def __init__(
