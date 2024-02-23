@@ -298,6 +298,8 @@ class TFObjectDetectionIterator:
             images = os.path.join(self.config_absolute_path, dataset)
             annotations = os.path.normpath(images).split(os.path.sep)
             annotations[-2] = "labels"
+            if annotations[0] == '':
+                annotations[0] = os.path.sep
             annotations = os.path.join(*annotations)
             annotations = annotations.replace(":", ":\\")
 
@@ -335,7 +337,7 @@ class TFObjectDetectionIterator:
             reader=reader,
             shape=self.shape,
             shuffle=is_train,
-            cache=self.cache
+            cache=self.cache if is_train else None
         )
 
     

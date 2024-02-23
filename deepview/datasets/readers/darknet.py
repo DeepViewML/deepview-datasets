@@ -373,11 +373,21 @@ class TFDarknetDetectionReader(DarknetDetectionReader):
     def get_boxes_dimensions(self) -> np.ndarray:
         import os
         
-        ann_file = self.annotations[0]
-        ann_file = os.path.dirname(ann_file) + "/*.txt"
-        boxes = pl.read_csv(ann_file, has_header=False,
-                                separator=" ").to_numpy()
-        return boxes[:, [3, 4]]
+        loop = tqdm(
+            self.annotations,
+            desc="Loading boxes dimensions",
+            colour="green",
+            bar_format='{l_bar}{bar:15}{r_bar}{bar:-15b}'
+        )
+        bboxes = []
+        for ann in loop:
+            data = np.genfromtxt(ann)
+            if len(data) == 0:
+                continue
+            if len(data.shape) == 1:
+                data = np.expand_dims(data, 0)
+            bboxes.append(data[:, 3, 4])
+        return np.concatenate(bboxes, axis=0)
 
 class TFUltralyticsDetectionReader(TFDarknetDetectionReader):
     def __init__(
