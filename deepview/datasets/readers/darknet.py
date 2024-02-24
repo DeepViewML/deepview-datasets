@@ -305,16 +305,16 @@ class DarknetDetectionReader(DarknetReader):
         image = np.asarray(image, dtype=np.uint8)
 
         if ann_file is None:
-            return image, np.asarray([], dtype=np.float32)
+            return image, np.zeros(shape=(1, 5), dtype=np.float32)
 
         try:
             boxes = pl.read_csv(ann_file, has_header=False,
                                 separator=" ").to_numpy()
         except pl.exceptions.NoDataError:
-            return image, np.asarray([], dtype=np.float32)
+            return image, np.zeros(shape=(1, 5), dtype=np.float32)
 
         if len(boxes) == 0:
-            return image, np.asarray([], dtype=np.float32)
+            return image, np.zeros(shape=(1, 5), dtype=np.float32)
 
         if len(boxes.shape) == 1:
             boxes = boxes[None, :]
