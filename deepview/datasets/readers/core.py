@@ -137,6 +137,7 @@ class BaseReader(Iterable):
         Returns the next element  by calling ``__getitem__`` function
         """
         if self.__current__ >= self.__size__:
+            self.__current__ = 0
             raise StopIteration
 
         element = self[self.__current__]
