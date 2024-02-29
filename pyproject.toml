@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deepview-datasets"
-version = "0.2.1"
+version = "0.3.1"
 description = "DeepView Datasets"
 readme = "README.md"
 authors = [{ name = "Au-Zone Technologies", email = "info@au-zone.com" }]
