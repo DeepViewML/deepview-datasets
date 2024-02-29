@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deepview-datasets"
-version = "0.2.0"
+version = "0.2.1"
 description = "DeepView Datasets"
 readme = "README.md"
 authors = [{ name = "Au-Zone Technologies", email = "info@au-zone.com" }]
@@ -20,12 +20,12 @@ classifiers = [
 ]
 keywords = ["feed", "reader", "tutorial"]
 dependencies = [
-    'tensorflow~=2.15.0',
+    'tensorflow >= 2.13.0',
     'pillow~=10.2.0',
     'polars~=0.20.5',
     'tqdm~=4.66.1',
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 
 [project.optional-dependencies]
 dev = ["bumpver"]
@@ -42,7 +42,7 @@ packages = [
 ]
 
 [tool.bumpver]
-current_version = "0.2.0"
+current_version = "0.2.1"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message  = "Update version {old_version} -> {new_version}"
 commit          = true
