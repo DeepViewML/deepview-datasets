@@ -5,4 +5,4 @@
 
 from deepview.datasets.iterators.core import BaseIterator
 from deepview.datasets.iterators.detection import ObjectDetectionIterator, \
-    TFObjectDetectionIterator
+    TFObjectDetectionIterator, TFObjectDetectionIterator

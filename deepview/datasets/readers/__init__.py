@@ -6,6 +6,6 @@
 from deepview.datasets.readers.core import BaseReader
 from deepview.datasets.readers.darknet import DarknetReader, \
     DarknetDetectionReader, \
-    TFDarknetDetectionReader
+    TFDarknetDetectionReader, TFUltralyticsDetectionReader
 from deepview.datasets.readers.arrow import PolarsDetectionReader, \
     TFPolarsDetectionReader

@@ -39,8 +39,29 @@ class BaseReader(Iterable):
         self.__instance_id__ = None
         
         if isinstance(classes, str):
-            with open(classes, 'r') as fp:
-                self.__classes__ = [cls.rstrip() for cls in fp.readlines()]
+            if classes.endswith(".txt"):
+                with open(classes, 'r') as fp:
+                    self.__classes__ = [cls.rstrip() for cls in fp.readlines()]
+            elif classes.endswith('.yaml'):
+                import yaml
+                with open(classes, 'r') as fp:
+                    metadata = yaml.safe_load(fp)
+                    self.__classes__ = metadata.get('classes', [])
+                    if len(self.__classes__) == 0:
+                        self.__classes__ = metadata.get('names', [])
+                        if isinstance(self.__classes__, dict):
+                            self.__classes__ = [
+                                value for _, value in self.__classes__.items()
+                            ]
+                        
+                    if len(self.__classes__) == 0:
+                        raise ValueError(
+                            f"No reference to class names was found in {classes}"
+                        )
+            else:
+                raise ValueError(
+                    "Unsupported file format was given for classes. Either of yaml or txt file"
+                )
         else:
             self.__classes__ = classes
 
@@ -116,6 +137,7 @@ class BaseReader(Iterable):
         Returns the next element  by calling ``__getitem__`` function
         """
         if self.__current__ >= self.__size__:
+            self.__current__ = 0
             raise StopIteration
 
         element = self[self.__current__]
