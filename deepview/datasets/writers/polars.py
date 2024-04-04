@@ -130,8 +130,9 @@ class PolarsDetectionWriter(PolarsWriter):
         for instance in loop:
             key = '{instance_id:0{width}}'.format(
                 instance_id=instance_id_counter, width=max_string_padd)
+            
             instance_id_counter += 1
-
+            
             images, annotations = self.write_instance(
                 instance, key
             )
@@ -171,3 +172,4 @@ class PolarsDetectionWriter(PolarsWriter):
                 self.__output__,
                 fname
             ))
+

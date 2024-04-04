@@ -300,9 +300,7 @@ class DarknetDetectionReader(DarknetReader):
             detection. The image and bounding boxes.
         """
         data, ann_file = super().__getitem__(item)
-        data = np.asarray(data, dtype=np.uint8)
-        image = Image.open(io.BytesIO(data)).convert('RGB')
-        image = np.asarray(image, dtype=np.uint8)
+        image = np.asarray(data, dtype=np.uint8)
 
         if ann_file is None:
             return image, np.zeros(shape=(1, 5), dtype=np.float32)
