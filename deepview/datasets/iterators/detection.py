@@ -6,7 +6,10 @@
 from deepview.datasets.iterators.core import BaseIterator
 from deepview.datasets.readers import BaseReader
 from typing import Any, Iterable
-import yaml
+import io
+from PIL import Image
+import numpy as np
+
 
 try:
     import os
@@ -76,8 +79,16 @@ class TFBaseObjectDetectionIterator(BaseIterator):
 
 
     def __getitem__(self, item: int) -> Any:
+        def __decode__(data):
+            data = Image.open(io.BytesIO(data)).convert('RGB')
+            return np.asarray(data, dtype=np.uint8)  
+            
         image, boxes = super().reader[item]
-        image.set_shape(self.shape)
+        image = tf.py_function(
+            __decode__,
+            [image],
+            Tout=tf.uint8
+        )
         image = tf.image.resize(image, (self.height, self.width))
         return image, boxes
 
