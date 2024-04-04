@@ -46,9 +46,10 @@ class BaseIterator(object):
         self.__reader__ = reader
         self.__shape__ = shape
         self.__shuffle__ = shuffle
-        self.__annotation_ids__ = list(range(len(self.__reader__)))
-        self.__current__ = 0
         self.__size__ = len(self.__reader__)
+        self.__annotation_ids__ = list(range(self.__size__))
+        self.__current__ = 0
+        
 
         if shuffle:
             random.shuffle(self.__annotation_ids__)

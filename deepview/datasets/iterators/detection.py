@@ -50,7 +50,8 @@ class TFBaseObjectDetectionIterator(BaseIterator):
     def __init__(
         self,
         reader: BaseReader,
-        shape: Iterable
+        shape: Iterable, 
+        shuffle: bool = True
     ) -> None:
         """
         Class constructor
@@ -61,6 +62,8 @@ class TFBaseObjectDetectionIterator(BaseIterator):
             An instance of a dataset reader
         shape : Iterable
             Any iterable in the form (height, width, channels)
+        shuffle : bool, optional
+            Shuffles the dataset
         
         Raises
         ------
@@ -72,7 +75,7 @@ class TFBaseObjectDetectionIterator(BaseIterator):
             In case ``batch_size < 0``
         """
 
-        super().__init__(reader, shape, False)
+        super().__init__(reader, shape, shuffle=shuffle)
 
     def get_boxes_dimensions(self) -> list:
         return self.reader.get_boxes_dimensions()
@@ -83,12 +86,13 @@ class TFBaseObjectDetectionIterator(BaseIterator):
             data = Image.open(io.BytesIO(data)).convert('RGB')
             return np.asarray(data, dtype=np.uint8)  
             
-        image, boxes = super().reader[item]
+        image, boxes = self.reader[item]
         image = tf.py_function(
             __decode__,
             [image],
             Tout=tf.uint8
         )
+        image.set_shape(self.shape)
         image = tf.image.resize(image, (self.height, self.width))
         return image, boxes
 
@@ -115,6 +119,12 @@ class TFBaseObjectDetectionIterator(BaseIterator):
             self.__getitem__,
             num_parallel_calls=tf.data.AUTOTUNE
         )
+
+        if self.__shuffle__:
+            ds_iter = ds_iter.shuffle(
+                buffer_size=ds_iter.cardinality(),
+                reshuffle_each_iteration=True
+            )
         return ds_iter
 
 
@@ -317,7 +327,8 @@ class TFObjectDetectionIterator:
             
         return TFBaseObjectDetectionIterator(
             reader=reader,
-            shape=self.shape
+            shape=self.shape,
+            shuffle=is_train
         )
 
     
@@ -336,13 +347,12 @@ class TFObjectDetectionIterator:
             In case the training iterator is None. Training set is mandatory
         """
         train_handler = self.__get_iterator__(is_train=True)
-
         if train_handler is None:
             raise RuntimeError(
                 "Training dataset was not properly loaded from source."
             )
 
-        return train_handler
+        return train_handler.iterator()
 
     def get_val_iterator(self) -> BaseIterator:
         """This function creates the Validation iterator and return it
@@ -352,7 +362,8 @@ class TFObjectDetectionIterator:
         BaseIterator
             An iterator loaded from validation partition.
         """
-        return self.__get_iterator__(is_train=False)
+        val_handler = self.__get_iterator__(is_train=False)
+        return val_handler.iterator()
 
     def get_boxes_dimensions(self) -> Iterable:
         """This function returns all the pairs width,height from bounding boxes in the training 
