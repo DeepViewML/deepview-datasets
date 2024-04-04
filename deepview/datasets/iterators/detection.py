@@ -13,7 +13,7 @@ try:
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     import tensorflow as tf
 except ImportError:
-    pass
+    print("[WARNING] Tensorflow iterators will be affected because the library is not installed on the system: ``pip install tensorflow``")
 
 
 class ObjectDetectionIterator(BaseIterator):

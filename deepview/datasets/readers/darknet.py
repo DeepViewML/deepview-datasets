@@ -16,7 +16,7 @@ import io
 try:
     import tensorflow as tf
 except ImportError:
-    pass
+    print("[WARNING] Tensorflow features might be affected because the library is not installed")
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
