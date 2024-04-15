@@ -152,7 +152,8 @@ class ObjectDetectionGenerator:
                 inputs=images,
                 annotations=annotations,
                 classes=self.__classes__,
-                silent=True
+                silent=True,
+                shuffle=is_train
             )
         else:
             from deepview.datasets.readers import DarknetDetectionReader
@@ -160,7 +161,8 @@ class ObjectDetectionGenerator:
                 images=images,
                 annotations=annotations,
                 classes=self.__classes__,
-                silent=True
+                silent=True,
+                shuffle=is_train
             )
         return reader
 
@@ -178,7 +180,8 @@ class ObjectDetectionGenerator:
             return UltralyticsDetectionReader(
                 images=dataset,
                 classes=self.__classes__,
-                path=path
+                path=path,
+                shuffle=is_train
             )
         else:
             basename = os.path.basename(self.config_absolute_path)
@@ -198,7 +201,8 @@ class ObjectDetectionGenerator:
                 images=images,
                 annotations=annotations,
                 classes=self.__classes__,
-                silent=True
+                silent=True,
+                shuffle=is_train
             )
 
     def __get_generator__(self, is_train: bool = True) -> BaseGenerator:
@@ -251,15 +255,15 @@ class ObjectDetectionGenerator:
 
         return train_handler.iterator()
 
-    def get_val_iterator(self) -> BaseGenerator:
-        """This function creates the Validation iterator and return it
+    def get_val_generator(self) -> BaseGenerator:
+        """This function creates the Validation generator and return it
 
         Returns
         -------
         BaseIterator
             An iterator loaded from validation partition.
         """
-        val_handler = self.__get_iterator__(is_train=False)
+        val_handler = self.__get_generator__(is_train=False)
         return val_handler.iterator()
 
     def get_boxes_dimensions(self, train: bool = True) -> Iterable:

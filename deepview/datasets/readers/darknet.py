@@ -29,11 +29,13 @@ class DarknetReader(ObjectDetectionBaseReader):
         images: Union[str, Iterable],
         annotations: Union[str, Iterable],
         classes: Union[str, Iterable],
-        silent: bool = False
+        silent: bool = False,
+        shuffle: bool = False,
     ) -> None:
         super().__init__(
             classes=classes,
-            silent=silent
+            silent=silent,
+            shuffle=shuffle
         )
         """
         Class constructor
@@ -52,6 +54,9 @@ class DarknetReader(ObjectDetectionBaseReader):
 
         silent : bool, optional, default False
              Whether printing to the console or not, by default False
+        
+        shuffle : bool, optional
+            This parameter force data to be shuffled everytime the iterator ends, Default to False
 
         Raises
         ------
@@ -198,7 +203,8 @@ class DarknetDetectionReader(DarknetReader):
         annotations: Union[str, Iterable],
         classes: Union[str, Iterable],
         silent: bool = False,
-        out_format: str = "xywh"
+        out_format: str = "xywh",
+        shuffle: bool = False
     ) -> None:
         """
         Class constructor
@@ -220,7 +226,10 @@ class DarknetDetectionReader(DarknetReader):
 
         out_format : str, default "xywh"
             This parameter specify the coordinate format for returning boxes
-
+        
+        shuffle : bool, optional
+            This parameter force data to be shuffled everytime the iterator ends, Default to False
+            
         Raises
         ------
         FileNotFoundError
@@ -237,7 +246,8 @@ class DarknetDetectionReader(DarknetReader):
             images=images,
             annotations=annotations,
             classes=classes,
-            silent=silent
+            silent=silent,
+            shuffle=shuffle
         )
 
         if out_format not in ["xywh", "xyxy"]:
@@ -350,7 +360,8 @@ class UltralyticsDetectionReader(DarknetDetectionReader):
         classes: Union[str, Iterable],
         silent: bool = False,
         out_format: str = "xywh",
-        path: str = None
+        path: str = None,
+        shuffle: bool = False
     ) -> None:
         """
         Class constructor
@@ -418,5 +429,6 @@ class UltralyticsDetectionReader(DarknetDetectionReader):
             annotations=annotation_files,
             classes=classes,
             silent=silent,
-            out_format=out_format
+            out_format=out_format,
+            shuffle=shuffle
         )

@@ -4,7 +4,7 @@
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
 from typing import Union, Iterable
-
+import random
 
 class BaseReader(Iterable):
     """
@@ -16,7 +16,8 @@ class BaseReader(Iterable):
     def __init__(
         self,
         classes: Union[str, Iterable],
-        silent: bool = False
+        silent: bool = False,
+        shuffle: bool = False
     ) -> None:
         """
         Class constructot
@@ -29,6 +30,8 @@ class BaseReader(Iterable):
             a file containing the classes
         silent : bool, optional
             Whether printing to the console or not, by default False
+        shuffle : bool, optional
+            This parameter force data to be shuffled everytime the iterator ends, Default to False            
         """
 
         self.silent = silent
@@ -37,6 +40,7 @@ class BaseReader(Iterable):
         self.__size__ = 0
         self.__classes__ = []
         self.__instance_id__ = None
+        self.__shuffle__ = shuffle
 
         if isinstance(classes, str):
             if classes.endswith(".txt"):
@@ -128,6 +132,9 @@ class BaseReader(Iterable):
             A tuple containing all the files that represent a single instance
 
         """
+        if self.__shuffle__ and item < 1:
+            random.shuffle(self.__storage__)
+            
         return self.__storage__[item]
 
     def __next__(self):
