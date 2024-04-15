@@ -3,7 +3,7 @@
 #  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
-from deepview.datasets.readers.core import BaseReader
+from deepview.datasets.readers.core import ObjectDetectionBaseReader
 from os.path import join, exists, splitext, basename
 from typing import Union, Iterable
 from PIL import Image, ImageFile
@@ -13,15 +13,10 @@ import numpy as np
 import polars as pl
 import io
 
-try:
-    import tensorflow as tf
-except ImportError:
-    print("[WARNING] Tensorflow features might be affected because the library is not installed")
-
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
-class DarknetReader(BaseReader):
+class DarknetReader(ObjectDetectionBaseReader):
     """
     Enables the abstract interface for reading darknet format.
     This format represents images and annotations as separated files.
@@ -329,48 +324,8 @@ class DarknetDetectionReader(DarknetReader):
         raise RuntimeError(
             f"Something when wrong with annotation file: {ann_file}"
         )
-    
-    
-        
 
-
-class TFDarknetDetectionReader(DarknetDetectionReader):
-
-    def get_item(self, item):
-        image, boxes = super().__getitem__(item)
-        boxes = tf.constant(boxes.tolist(), dtype=tf.float32)
-
-        return image, boxes
-
-    @tf.function
-    def __getitem__(
-            self,
-            item: int
-    ) -> dict:
-        """
-        This funciton return instance ``item`` as ragged tensors
-
-        Parameters
-        ----------
-        item : int
-            Instance id
-
-        Returns
-        -------
-        dict
-            A python dictionary containing all the instance elements as
-                ``tf.ragged.constant``
-        """
-
-        return tf.py_function(
-            self.get_item,
-            [item],
-            Tout=(tf.uint8, tf.float32)
-        )
-    
     def get_boxes_dimensions(self) -> np.ndarray:
-        import os
-        
         loop = tqdm(
             self.annotations,
             desc="Loading boxes dimensions",
@@ -387,7 +342,8 @@ class TFDarknetDetectionReader(DarknetDetectionReader):
             bboxes.append(data[:, [3, 4]])
         return np.concatenate(bboxes, axis=0)
 
-class TFUltralyticsDetectionReader(TFDarknetDetectionReader):
+
+class UltralyticsDetectionReader(DarknetDetectionReader):
     def __init__(
         self,
         images: str,
@@ -457,19 +413,10 @@ class TFUltralyticsDetectionReader(TFDarknetDetectionReader):
             ann = ann.replace("images", "labels")
             annotation_files.append(ann)
 
-        super(TFUltralyticsDetectionReader, self).__init__(
+        super(UltralyticsDetectionReader, self).__init__(
             images=image_files,
             annotations=annotation_files,
             classes=classes,
             silent=silent,
             out_format=out_format
         )
-
-
-class DarknetSegmentationReader(DarknetReader):
-    def __getitem__(
-        self,
-        item
-    ) -> tuple:
-        pass
-

@@ -8,11 +8,10 @@ from typing import Iterable, Any
 import random
 
 
-class BaseIterator(object):
+class BaseGenerator(object):
     def __init__(
         self,
         reader:     BaseReader,
-        shape:      Iterable,
         shuffle:    bool = False
     ) -> None:
         """
@@ -22,8 +21,6 @@ class BaseIterator(object):
         ----------
         reader : deepview.datasets.reader.BaseReader
             An instance of a dataset reader
-        shape : Iterable
-            Any iterable in the form (height, width, channels)
         shuffle :  bool, optional
             Whether to shuffle or not dataset
 
@@ -39,12 +36,7 @@ class BaseIterator(object):
             raise ValueError(
                 "``None`` reader was provided"
             )
-        if shape is None or len(shape) != 3:
-            raise ValueError(
-                f"Unsupported shape was provided: {shape}"
-            )
         self.__reader__ = reader
-        self.__shape__ = shape
         self.__shuffle__ = shuffle
         self.__size__ = len(self.__reader__)
         self.__annotation_ids__ = list(range(self.__size__))
@@ -53,22 +45,6 @@ class BaseIterator(object):
 
         if shuffle:
             random.shuffle(self.__annotation_ids__)
-
-    @property
-    def shape(self):
-        return self.__shape__
-
-    @property
-    def height(self) -> int:
-        return self.__shape__[0]
-
-    @property
-    def width(self) -> int:
-        return self.__shape__[1]
-
-    @property
-    def channels(self) -> int:
-        return self.__shape__[2]
 
     @property
     def reader(self):
@@ -110,6 +86,9 @@ class BaseIterator(object):
         Returns the next element  by calling ``__getitem__`` function
         """
         if self.__current__ >= self.__size__:
+            if self.__shuffle__:
+                random.shuffle(self.__annotation_ids__)
+            
             raise StopIteration
 
         element = self[self.__current__]

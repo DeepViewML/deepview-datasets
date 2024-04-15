@@ -3,20 +3,15 @@
 #  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
-from deepview.datasets.readers.core import BaseReader
+from deepview.datasets.readers.core import ObjectDetectionBaseReader
 from typing import Iterable
 import polars as pl
 from PIL import Image
 import numpy as np
 import io
 
-try:
-    import tensorflow as tf
-except ImportError:
-    pass
 
-
-class PolarsDetectionReader(BaseReader):
+class PolarsDetectionReader(ObjectDetectionBaseReader):
     """
     This class wraps polars library to efficiently load a dataset
     """
@@ -134,35 +129,5 @@ class PolarsDetectionReader(BaseReader):
             return image, np.zeros(shape=(1, 5), dtype=np.float32)
 
         boxes = np.concatenate([bboxes, classes], axis=1)
+        
         return image, boxes
-
-
-class TFPolarsDetectionReader(PolarsDetectionReader):
-
-    def get_item(self, item):
-        return super().__getitem__(item)
-
-    @tf.function
-    def __getitem__(
-            self,
-            item: int
-    ) -> tuple:
-        """
-        This funciton return instance ``item``
-
-        Parameters
-        ----------
-        item : int
-            Instance id
-
-        Returns
-        -------
-        tuple
-            A tuple containing all the data for a single instance
-        """
-
-        return tf.py_function(
-            self.get_item,
-            [item],
-            Tout=(tf.uint8, tf.float32)
-        )

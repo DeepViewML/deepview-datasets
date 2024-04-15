@@ -37,7 +37,7 @@ class BaseReader(Iterable):
         self.__size__ = 0
         self.__classes__ = []
         self.__instance_id__ = None
-        
+
         if isinstance(classes, str):
             if classes.endswith(".txt"):
                 with open(classes, 'r') as fp:
@@ -53,7 +53,7 @@ class BaseReader(Iterable):
                             self.__classes__ = [
                                 value for _, value in self.__classes__.items()
                             ]
-                        
+
                     if len(self.__classes__) == 0:
                         raise ValueError(
                             f"No reference to class names was found in {classes}"
@@ -65,8 +65,6 @@ class BaseReader(Iterable):
         else:
             self.__classes__ = classes
 
-        
-    
     def get_instance_id(self):
         if self.__instance_id__ is None:
             raise RuntimeWarning(
@@ -154,3 +152,8 @@ class BaseReader(Iterable):
             A copy of current object
         """
         return self
+
+
+class ObjectDetectionBaseReader(BaseReader):
+    def get_boxes_dimensions(self) -> Iterable:
+        raise NotImplementedError("Abstract method")

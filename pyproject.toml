@@ -35,7 +35,7 @@ Homepage = "https://github.com/DeepViewML/deepview-datasets"
 [tool.setuptools]
 packages = [
     "deepview.datasets",
-    "deepview.datasets.iterators",
+    "deepview.datasets.generators",
     "deepview.datasets.readers",
     "deepview.datasets.writers",
 ]

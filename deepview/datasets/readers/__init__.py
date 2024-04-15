@@ -3,9 +3,7 @@
 #  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
-from deepview.datasets.readers.core import BaseReader
+from deepview.datasets.readers.core import BaseReader, ObjectDetectionBaseReader
 from deepview.datasets.readers.darknet import DarknetReader, \
-    DarknetDetectionReader, \
-    TFDarknetDetectionReader, TFUltralyticsDetectionReader
-from deepview.datasets.readers.arrow import PolarsDetectionReader, \
-    TFPolarsDetectionReader
+    DarknetDetectionReader, UltralyticsDetectionReader
+from deepview.datasets.readers.arrow import PolarsDetectionReader
