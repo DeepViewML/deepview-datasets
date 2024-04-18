@@ -3,12 +3,12 @@
 #  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
-from deepview.datasets.readers.core import ObjectDetectionBaseReader
 from typing import Iterable
-import polars as pl
-from PIL import Image
-import numpy as np
 import io
+import numpy as np
+from PIL import Image
+import polars as pl
+from deepview.datasets.readers.core import ObjectDetectionBaseReader
 
 
 class PolarsDetectionReader(ObjectDetectionBaseReader):
@@ -21,42 +21,47 @@ class PolarsDetectionReader(ObjectDetectionBaseReader):
         inputs: str,
         annotations: str,
         silent: bool = False,
-        classes: Iterable = None
+        classes: Iterable = None,
+        shuffle: bool = False
     ) -> None:
         super().__init__(
             classes=[],
-            silent=silent
+            silent=silent,
+            shuffle=shuffle
         )
-        """
-        Class constructor
 
-        Parameters
-        -----------
-        inputs : str
-            Path containing the model input data. For example, in a detection
-            model, the inputs are going to be the path to ``images_*.arrow``
+        """Class constructor
 
+            Parameters
+            -------------
+            
+                inputs : str
+                    Path containing the model input data. For example, in a detection
+                    model, the inputs are going to be the path to ``images_*.arrow``
+                    
+                annotations : Union[str, Iterable]
+                    Either of the path to the folder containng *.txt files or a list
+                    containing the path to all the
 
-        annotations : Union[str, Iterable]
-            Either of the path to the folder containng *.txt files or a list
-            containing the path to all the
+                classes:  Union[str, Iterable]
+                    Either of a list containing the name of the classes or the path to
+                    a file containing the classes
 
-        classes:  Union[str, Iterable]
-            Either of a list containing the name of the classes or the path to
-            a file containing the classes
+                silent : bool, optional, default False
+                    Whether printing to the console or not, by default False
+                
+                shuffle : bool, optional
+                    This parameter force data to be shuffled everytime the iterator ends, Default to False
+            
+            Raises
+            --------
+                FileNotFoundError
+                    An exception is thrown in case path to images or annotations does
+                    not exist
 
-        silent : bool, optional, default False
-             Whether printing to the console or not, by default False
-
-        Raises
-        ------
-        FileNotFoundError
-            An exception is thrown in case path to images or annotations does
-            not exist
-
-        Return
-        ------
-        None
+            Return
+            --------
+                None
 
         """
 
@@ -105,7 +110,7 @@ class PolarsDetectionReader(ObjectDetectionBaseReader):
     ) -> tuple:
         instance_id = self.__annotations_ids__[item]
         self.__instance_id__ = instance_id
-        
+
         data = self.__inputs__.filter(pl.col("id").eq(instance_id)).select(
             pl.col("data")).collect().item().to_list()
         data = np.asarray(data, dtype=np.uint8)
@@ -129,5 +134,5 @@ class PolarsDetectionReader(ObjectDetectionBaseReader):
             return image, np.zeros(shape=(1, 5), dtype=np.float32)
 
         boxes = np.concatenate([bboxes, classes], axis=1)
-        
+
         return image, boxes

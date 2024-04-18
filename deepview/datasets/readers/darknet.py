@@ -3,15 +3,16 @@
 #  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
-from deepview.datasets.readers.core import ObjectDetectionBaseReader
-from os.path import join, exists, splitext, basename
-from typing import Union, Iterable
-from PIL import Image, ImageFile
 from glob import glob
-from tqdm import tqdm
 import numpy as np
 import polars as pl
-import io
+from os.path import join, exists, splitext, basename
+from tqdm import tqdm
+from typing import Union, Iterable
+from PIL import ImageFile
+
+
+from deepview.datasets.readers.core import ObjectDetectionBaseReader
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -226,10 +227,10 @@ class DarknetDetectionReader(DarknetReader):
 
         out_format : str, default "xywh"
             This parameter specify the coordinate format for returning boxes
-        
+
         shuffle : bool, optional
             This parameter force data to be shuffled everytime the iterator ends, Default to False
-            
+
         Raises
         ------
         FileNotFoundError

@@ -3,12 +3,16 @@
 #  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
-from deepview.datasets.readers import BaseReader
-from typing import Iterable, Any
+from typing import Any
 import random
+from deepview.datasets.readers import BaseReader
 
 
 class BaseGenerator(object):
+    """
+    BaseGenerator This class describes the basic behavior of any Generator
+    """
+
     def __init__(
         self,
         reader:     BaseReader,
@@ -41,13 +45,20 @@ class BaseGenerator(object):
         self.__size__ = len(self.__reader__)
         self.__annotation_ids__ = list(range(self.__size__))
         self.__current__ = 0
-        
 
         if shuffle:
             random.shuffle(self.__annotation_ids__)
 
     @property
     def reader(self):
+        """
+        reader Property overload for safety access to the reader
+
+        Returns
+        -------
+        reader
+            deepview.datasets.reader.BaseReader
+        """
         return self.__reader__
 
     def __getitem__(
@@ -88,7 +99,7 @@ class BaseGenerator(object):
         if self.__current__ >= self.__size__:
             if self.__shuffle__:
                 random.shuffle(self.__annotation_ids__)
-            
+
             raise StopIteration
 
         element = self[self.__current__]

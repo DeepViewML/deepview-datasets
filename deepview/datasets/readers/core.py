@@ -5,6 +5,9 @@
 
 from typing import Union, Iterable
 import random
+import numpy as np
+import yaml
+
 
 class BaseReader(Iterable):
     """
@@ -44,11 +47,10 @@ class BaseReader(Iterable):
 
         if isinstance(classes, str):
             if classes.endswith(".txt"):
-                with open(classes, 'r') as fp:
+                with open(classes, 'r', encoding='utf-8') as fp:
                     self.__classes__ = [cls.rstrip() for cls in fp.readlines()]
             elif classes.endswith('.yaml'):
-                import yaml
-                with open(classes, 'r') as fp:
+                with open(classes, 'r', encoding='utf-8') as fp:
                     metadata = yaml.safe_load(fp)
                     self.__classes__ = metadata.get('classes', [])
                     if len(self.__classes__) == 0:
@@ -70,6 +72,19 @@ class BaseReader(Iterable):
             self.__classes__ = classes
 
     def get_instance_id(self):
+        """
+        get_instance_id This functoin 
+
+        Returns
+        -------
+        _type_
+            _description_
+
+        Raises
+        ------
+        RuntimeWarning
+            _description_
+        """
         if self.__instance_id__ is None:
             raise RuntimeWarning(
                 "self.__instance_id__ is None. Bad property initialization"
@@ -134,7 +149,7 @@ class BaseReader(Iterable):
         """
         if self.__shuffle__ and item < 1:
             random.shuffle(self.__storage__)
-            
+
         return self.__storage__[item]
 
     def __next__(self):
@@ -160,7 +175,39 @@ class BaseReader(Iterable):
         """
         return self
 
+    def random(self):
+        """This function returns a random element from the dataset
+
+        Returns
+        -------
+        tuple
+            Contains the inputs and labels for a given random element in the dataset
+
+        """
+        item = np.random.randint(0, self.__size__ - 1)
+        return self[item]
+
 
 class ObjectDetectionBaseReader(BaseReader):
+    """This class wraps the Object Detection Dataset Reader
+
+    Parameters
+    ----------
+    BaseReader : Base class
+        Base class for all the readers
+    """
+
     def get_boxes_dimensions(self) -> Iterable:
+        """This function extracts bounding boxes dimensions for anchors computation purposes
+
+        Returns
+        -------
+        Iterable
+            An np.ndarray of shape (N, 2) composed by all the bounding boxes (width, height)
+
+        Raises
+        ------
+        NotImplementedError
+            Abstract method
+        """
         raise NotImplementedError("Abstract method")

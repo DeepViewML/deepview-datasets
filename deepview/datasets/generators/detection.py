@@ -3,13 +3,16 @@
 #  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
-from deepview.datasets.generators.core import BaseGenerator
-from deepview.datasets.readers import BaseReader
-from typing import Any, Iterable
+from typing import Iterable
 import io
+import os
 from PIL import Image
 import numpy as np
-import os
+import yaml
+from deepview.datasets.generators.core import BaseGenerator
+from deepview.datasets.readers import DarknetDetectionReader
+from deepview.datasets.readers import UltralyticsDetectionReader
+from deepview.datasets.readers import PolarsDetectionReader
 
 
 class BaseObjectDetectionGenerator(BaseGenerator):
@@ -33,14 +36,21 @@ class BaseObjectDetectionGenerator(BaseGenerator):
         """
         data, boxes = super().__getitem__(item)
         data = Image.open(io.BytesIO(data)).convert('RGB')
-        image = np.asarray(data, dtype=np.uint8)  
+        image = np.asarray(data, dtype=np.uint8)
 
         return image, boxes
 
+    def get_boxes_dimensions(self) -> Iterable:
+        """
+        get_boxes_dimensions returns the list of bounding boxes dimensions from the entire dataset in the way of (width, height)
 
-    def get_boxes_dimensions(self) -> list:
+        Returns
+        -------
+        Iterable
+            Any iterable containing all the dimensions on the dataset
+        """
         return self.reader.get_boxes_dimensions()
-    
+
 
 class ObjectDetectionGenerator:
     def __init__(
@@ -63,7 +73,7 @@ class ObjectDetectionGenerator:
         """
 
         self.config = from_config
-        
+
         if os.path.isfile(from_config) and not from_config.endswith(".yaml"):
             raise ValueError(
                 f"Configuration file specified at `from_config` has to be a yaml file: {from_config}"
@@ -74,8 +84,7 @@ class ObjectDetectionGenerator:
                 f"Configuration file provided at `frmo_config` parameter does not exist: {from_config}"
             )
 
-        import yaml
-        with open(from_config, 'r') as fp:
+        with open(from_config, 'r', encoding="utf-8") as fp:
             self.config = yaml.safe_load(fp)
 
         self.config_absolute_path = os.path.dirname(
@@ -86,6 +95,7 @@ class ObjectDetectionGenerator:
 
         self.__classes__ = self.load_classes()
         self.training_reader = None
+        self.val_reader = None
 
     @property
     def classes(self) -> Iterable:
@@ -147,7 +157,6 @@ class ObjectDetectionGenerator:
         annotations = os.path.join(self.config_absolute_path, annotations)
 
         if images.endswith("*.arrow") and annotations.endswith("*.arrow"):
-            from deepview.datasets.readers import PolarsDetectionReader
             return PolarsDetectionReader(
                 inputs=images,
                 annotations=annotations,
@@ -156,7 +165,6 @@ class ObjectDetectionGenerator:
                 shuffle=is_train
             )
         else:
-            from deepview.datasets.readers import DarknetDetectionReader
             reader = DarknetDetectionReader(
                 images=images,
                 annotations=annotations,
@@ -167,8 +175,6 @@ class ObjectDetectionGenerator:
         return reader
 
     def __storage_from_ultralytics__(self, is_train: bool = True) -> Iterable:
-        from deepview.datasets.readers import UltralyticsDetectionReader
-        from deepview.datasets.readers import DarknetDetectionReader
 
         dataset = self.config.get(
             "train", None) if is_train else self.config.get("val", None)
@@ -228,7 +234,7 @@ class ObjectDetectionGenerator:
             self.training_reader = reader
         else:
             self.val_reader = reader
-            
+
         return BaseObjectDetectionGenerator(
             reader=reader,
             shuffle=is_train
@@ -279,8 +285,8 @@ class ObjectDetectionGenerator:
             reader = self.training_reader
         else:
             reader = self.val_reader
-        
+
         if reader is None:
             reader = self.__get_generator__(is_train=train)
-        
+
         return reader.get_boxes_dimensions()
