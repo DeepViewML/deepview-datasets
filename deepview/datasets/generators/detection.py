@@ -50,6 +50,10 @@ class BaseObjectDetectionGenerator(BaseGenerator):
             Any iterable containing all the dimensions on the dataset
         """
         return self.reader.get_boxes_dimensions()
+    
+    def random(self):
+        item = np.random.randint(0, len(self.__reader__) - 1)
+        return self[item]
 
 
 class ObjectDetectionGenerator:
