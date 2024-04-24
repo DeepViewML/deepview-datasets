@@ -3,16 +3,19 @@
 #  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
-from deepview.datasets.readers import BaseReader
-from typing import Iterable, Any
+from typing import Any
 import random
+from deepview.datasets.readers import BaseReader
 
 
-class BaseIterator(object):
+class BaseGenerator(object):
+    """
+    BaseGenerator This class describes the basic behavior of any Generator
+    """
+
     def __init__(
         self,
         reader:     BaseReader,
-        shape:      Iterable,
         shuffle:    bool = False
     ) -> None:
         """
@@ -22,8 +25,6 @@ class BaseIterator(object):
         ----------
         reader : deepview.datasets.reader.BaseReader
             An instance of a dataset reader
-        shape : Iterable
-            Any iterable in the form (height, width, channels)
         shuffle :  bool, optional
             Whether to shuffle or not dataset
 
@@ -39,38 +40,25 @@ class BaseIterator(object):
             raise ValueError(
                 "``None`` reader was provided"
             )
-        if shape is None or len(shape) != 3:
-            raise ValueError(
-                f"Unsupported shape was provided: {shape}"
-            )
         self.__reader__ = reader
-        self.__shape__ = shape
         self.__shuffle__ = shuffle
-        self.__annotation_ids__ = list(range(len(self.__reader__)))
-        self.__current__ = 0
         self.__size__ = len(self.__reader__)
+        self.__annotation_ids__ = list(range(self.__size__))
+        self.__current__ = 0
 
         if shuffle:
             random.shuffle(self.__annotation_ids__)
 
     @property
-    def shape(self):
-        return self.__shape__
-
-    @property
-    def height(self) -> int:
-        return self.__shape__[0]
-
-    @property
-    def width(self) -> int:
-        return self.__shape__[1]
-
-    @property
-    def channels(self) -> int:
-        return self.__shape__[2]
-
-    @property
     def reader(self):
+        """
+        reader Property overload for safety access to the reader
+
+        Returns
+        -------
+        reader
+            deepview.datasets.reader.BaseReader
+        """
         return self.__reader__
 
     def __getitem__(
@@ -109,6 +97,9 @@ class BaseIterator(object):
         Returns the next element  by calling ``__getitem__`` function
         """
         if self.__current__ >= self.__size__:
+            if self.__shuffle__:
+                random.shuffle(self.__annotation_ids__)
+
             raise StopIteration
 
         element = self[self.__current__]

@@ -3,22 +3,21 @@
 #  DUAL-LICENSED UNDER AGPL-3.0 OR DEEPVIEW AI MIDDLEWARE COMMERCIAL LICENSE
 #    CONTACT AU-ZONE TECHNOLOGIES <INFO@AU-ZONE.COM> FOR LICENSING DETAILS
 
-from deepview.datasets.iterators.core import BaseIterator
-from deepview.datasets.readers import BaseReader
-from typing import Any, Iterable
+from typing import Iterable
+import io
+import os
+from PIL import Image
+import numpy as np
 import yaml
-
-try:
-    import os
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    import tensorflow as tf
-except ImportError:
-    pass
+from deepview.datasets.generators.core import BaseGenerator
+from deepview.datasets.readers import DarknetDetectionReader
+from deepview.datasets.readers import UltralyticsDetectionReader
+from deepview.datasets.readers import PolarsDetectionReader
 
 
-class ObjectDetectionIterator(BaseIterator):
+class BaseObjectDetectionGenerator(BaseGenerator):
     """
-    Abstract class for Object Detection dataset iterators
+    Abstract class for Object Detection dataset generator
     """
 
     def __getitem__(self, item: int) -> tuple:
@@ -35,84 +34,32 @@ class ObjectDetectionIterator(BaseIterator):
         tuple
             A tuple containing all the elements from the same instance
         """
-        return super().__getitem__(item)
+        data, boxes = super().__getitem__(item)
+        data = Image.open(io.BytesIO(data)).convert('RGB')
+        image = np.asarray(data, dtype=np.uint8)
 
-
-class TFBaseObjectDetectionIterator(BaseIterator):
-    """
-    This class represents an Object Detector iterator with optimized
-    pipeline for training models. The core library is TensorFlow
-    """
-
-    def __init__(
-        self,
-        reader: BaseReader,
-        shape: Iterable
-    ) -> None:
-        """
-        Class constructor
-
-        Parameters
-        ----------
-        reader : deepview.datasets.reader.BaseReader
-            An instance of a dataset reader
-        shape : Iterable
-            Any iterable in the form (height, width, channels)
-        
-        Raises
-        ------
-        ValueError
-            In case the reader is none or unsupported
-        ValueError
-            In case shape is invalid or None
-        ValueError
-            In case ``batch_size < 0``
-        """
-
-        super().__init__(reader, shape, False)
-
-    def get_boxes_dimensions(self) -> list:
-        return self.reader.get_boxes_dimensions()
-
-
-    def __getitem__(self, item: int) -> Any:
-        image, boxes = super().reader[item]
-        image.set_shape(self.shape)
-        image = tf.image.resize(image, (self.height, self.width))
         return image, boxes
 
-    def iterator(
-        self
-    ) -> Any:
+    def get_boxes_dimensions(self) -> Iterable:
         """
-        This function returns a tf.data.Dataset iterator in batch model.
-        The reason why elements are returned in batches is because
-        according to TensorFlow documentation, Vectorial mapping guarantees
-        the higher performance on GPU
+        get_boxes_dimensions returns the list of bounding boxes dimensions from the entire dataset in the way of (width, height)
 
         Returns
         -------
-        tf.data.Dataset
-            A batched dataset wrapped into a dictionary format:
-                ``{"images": images, "boxes": boxes}``
-
+        Iterable
+            Any iterable containing all the dimensions on the dataset
         """
-
-        ds_iter = tf.data.Dataset.from_tensor_slices(self.__annotation_ids__)
-
-        ds_iter = ds_iter.map(
-            self.__getitem__,
-            num_parallel_calls=tf.data.AUTOTUNE
-        )
-        return ds_iter
+        return self.reader.get_boxes_dimensions()
+    
+    def random(self):
+        item = np.random.randint(0, len(self.__reader__) - 1)
+        return self[item]
 
 
-class TFObjectDetectionIterator:
+class ObjectDetectionGenerator:
     def __init__(
         self,
-        from_config: str,
-        shape: Iterable,
-        cache: str = None
+        from_config: str
     ) -> None:
         """Class constructor
 
@@ -120,17 +67,6 @@ class TFObjectDetectionIterator:
         ----------
         from_config : str
            Path to a yaml file containing the dataset information
-
-        shape : Iterable
-           Shape to resize the images and boxes. Usually a tuple containing three values (height, width, channels)
-
-        cache : str, optional
-            Whether to use a cache on file or not. If cache is a path, then
-            TensorFlow will use it for storing metadata. Otherwise, cache is
-            going to be in memory. In case the dataset is larger than memory,
-            TensorFlow will interrupt the training and raise and Error.
-
-            Note: Make sure the application has write permissions on cache dir
 
         Raises
         ------
@@ -141,8 +77,6 @@ class TFObjectDetectionIterator:
         """
 
         self.config = from_config
-        self.shape = shape
-        self.cache = cache
 
         if os.path.isfile(from_config) and not from_config.endswith(".yaml"):
             raise ValueError(
@@ -154,9 +88,9 @@ class TFObjectDetectionIterator:
                 f"Configuration file provided at `frmo_config` parameter does not exist: {from_config}"
             )
 
-        import yaml
-        with open(from_config, 'r') as fp:
+        with open(from_config, 'r', encoding="utf-8") as fp:
             self.config = yaml.safe_load(fp)
+
         self.config_absolute_path = os.path.dirname(
             os.path.abspath(from_config))
 
@@ -165,6 +99,7 @@ class TFObjectDetectionIterator:
 
         self.__classes__ = self.load_classes()
         self.training_reader = None
+        self.val_reader = None
 
     @property
     def classes(self) -> Iterable:
@@ -226,26 +161,24 @@ class TFObjectDetectionIterator:
         annotations = os.path.join(self.config_absolute_path, annotations)
 
         if images.endswith("*.arrow") and annotations.endswith("*.arrow"):
-            from deepview.datasets.readers import TFPolarsDetectionReader
-            return TFPolarsDetectionReader(
+            return PolarsDetectionReader(
                 inputs=images,
                 annotations=annotations,
                 classes=self.__classes__,
-                silent=True
+                silent=True,
+                shuffle=is_train
             )
         else:
-            from deepview.datasets.readers import TFDarknetDetectionReader
-            reader = TFDarknetDetectionReader(
+            reader = DarknetDetectionReader(
                 images=images,
                 annotations=annotations,
                 classes=self.__classes__,
-                silent=True
+                silent=True,
+                shuffle=is_train
             )
         return reader
 
     def __storage_from_ultralytics__(self, is_train: bool = True) -> Iterable:
-        from deepview.datasets.readers import TFUltralyticsDetectionReader
-        from deepview.datasets.readers import TFDarknetDetectionReader
 
         dataset = self.config.get(
             "train", None) if is_train else self.config.get("val", None)
@@ -254,10 +187,11 @@ class TFObjectDetectionIterator:
 
         path = self.config.get("path", None)
         if dataset.endswith(".txt"):
-            return TFUltralyticsDetectionReader(
+            return UltralyticsDetectionReader(
                 images=dataset,
                 classes=self.__classes__,
-                path=path
+                path=path,
+                shuffle=is_train
             )
         else:
             basename = os.path.basename(self.config_absolute_path)
@@ -273,15 +207,16 @@ class TFObjectDetectionIterator:
             annotations = os.path.join(*annotations)
             annotations = annotations.replace(":", ":\\")
 
-            return TFDarknetDetectionReader(
+            return DarknetDetectionReader(
                 images=images,
                 annotations=annotations,
                 classes=self.__classes__,
-                silent=True
+                silent=True,
+                shuffle=is_train
             )
 
-    def __get_iterator__(self, is_train: bool = True) -> BaseIterator:
-        """This function returns the Iterator instance according to the dataset format
+    def __get_generator__(self, is_train: bool = True) -> BaseGenerator:
+        """This function returns the Generator instance according to the dataset format
 
         Parameters
         ----------
@@ -295,7 +230,7 @@ class TFObjectDetectionIterator:
 
         Returns
         -------
-        BaseIterator
+        BaseGenerator
             The iterator ready to be consumed by the training iterators. Note: data is not batched or augmented at this point
         """
         reader = self.load_reader(is_train=is_train)
@@ -303,15 +238,13 @@ class TFObjectDetectionIterator:
             self.training_reader = reader
         else:
             self.val_reader = reader
-            
-        return TFBaseObjectDetectionIterator(
+
+        return BaseObjectDetectionGenerator(
             reader=reader,
-            shape=self.shape
+            shuffle=is_train
         )
 
-    
-    
-    def get_train_iterator(self) -> BaseIterator:
+    def get_train_generator(self) -> BaseGenerator:
         """This function creates the Train iterator and return it
 
         Returns
@@ -324,26 +257,26 @@ class TFObjectDetectionIterator:
         RuntimeError
             In case the training iterator is None. Training set is mandatory
         """
-        train_handler = self.__get_iterator__(is_train=True)
-
+        train_handler = self.__get_generator__(is_train=True)
         if train_handler is None:
             raise RuntimeError(
                 "Training dataset was not properly loaded from source."
             )
 
-        return train_handler
+        return train_handler.iterator()
 
-    def get_val_iterator(self) -> BaseIterator:
-        """This function creates the Validation iterator and return it
+    def get_val_generator(self) -> BaseGenerator:
+        """This function creates the Validation generator and return it
 
         Returns
         -------
         BaseIterator
             An iterator loaded from validation partition.
         """
-        return self.__get_iterator__(is_train=False)
+        val_handler = self.__get_generator__(is_train=False)
+        return val_handler.iterator()
 
-    def get_boxes_dimensions(self) -> Iterable:
+    def get_boxes_dimensions(self, train: bool = True) -> Iterable:
         """This function returns all the pairs width,height from bounding boxes in the training 
         set to compute anchors
 
@@ -352,4 +285,12 @@ class TFObjectDetectionIterator:
         Iterable
             The Iterable instance containing pairs of width,height
         """
-        return self.training_reader.get_boxes_dimensions()
+        if train:
+            reader = self.training_reader
+        else:
+            reader = self.val_reader
+
+        if reader is None:
+            reader = self.__get_generator__(is_train=train)
+
+        return reader.get_boxes_dimensions()
