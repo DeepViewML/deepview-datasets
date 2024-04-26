@@ -195,6 +195,27 @@ class DarknetReader(ObjectDetectionBaseReader):
         image = np.fromfile(instance[0], dtype=np.uint8)
         return image, instance[1]
 
+    def get_class_distribution(self) -> dict:
+
+        loop = tqdm(
+            self.annotations,
+            desc="Loading class distribution",
+            colour="green",
+            bar_format='{l_bar}{bar:15}{r_bar}{bar:-15b}'
+        )
+        classes = []
+        for ann in loop:
+            data = np.genfromtxt(ann)
+            if len(data) == 0:
+                continue
+            if len(data.shape) == 1:
+                data = np.expand_dims(data, 0)
+
+            classes.append(data[:, 0])
+        classes = np.concatenate(classes, axis=0).astype(np.int32)
+        classes = np.bincount(classes)        
+        return dict(enumerate(classes))
+    
 
 class DarknetDetectionReader(DarknetReader):
 

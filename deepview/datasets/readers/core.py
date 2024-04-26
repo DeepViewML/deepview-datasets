@@ -187,6 +187,8 @@ class BaseReader(Iterable):
         item = np.random.randint(0, self.__size__ - 1)
         return self[item]
 
+    def get_class_distribution(self) -> dict:
+        raise NotImplementedError("Abstract method should be implemented bu child classes")
 
 class ObjectDetectionBaseReader(BaseReader):
     """This class wraps the Object Detection Dataset Reader
@@ -211,3 +213,6 @@ class ObjectDetectionBaseReader(BaseReader):
             Abstract method
         """
         raise NotImplementedError("Abstract method")
+
+    def get_class_distribution(self) -> dict:
+        raise NotImplementedError("Abstract method should be implemented bu child classes")
