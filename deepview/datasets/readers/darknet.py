@@ -77,7 +77,7 @@ class DarknetReader(ObjectDetectionBaseReader):
         self.__current__ = -1
 
         if isinstance(images, str):
-            if not exists(images):
+            if "*" not in annotations and not exists(images):
                 raise FileNotFoundError(
                     f"\n\t - [ERROR] Images folder does not exist at: {images}"
                 )
@@ -116,24 +116,28 @@ class DarknetReader(ObjectDetectionBaseReader):
             )
 
         if isinstance(annotations, str):
-            if not exists(annotations):
+            if "*" not in annotations and not exists(annotations):
                 raise FileNotFoundError(
-                    f"\n\t - [ERROR] Images folder does not exist at: {annotations}"
+                    f"\n\t - [ERROR] Annotations folder does not exist at: {annotations}"
                 )
 
             for image in loop:
                 image_name = splitext(basename(image))[0]
-                ann_file = join(annotations, image_name + '.txt')
-
-                if not exists(ann_file):
-                    ann_path = splitext(image_name)[0] + ".txt"
+                
+                if "*" in annotations:
+                    ann_path = splitext(image)[0] + ".txt"
                     if exists(ann_path):
                         self.annotations.append(ann_path)
+                        ann_file = ann_path
                     else:
                         ann_file = None
                 else:
-                    self.annotations.append(ann_file)
-
+                    ann_file = join(annotations, image_name + '.txt')
+                    if exists(ann_file):
+                        self.annotations.append(ann_path)
+                    else:
+                        ann_file = None
+                
                 self.__storage__.append([image, ann_file])
                 self.__size__ += 1
         else:
