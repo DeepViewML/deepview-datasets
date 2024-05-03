@@ -294,3 +294,27 @@ class ObjectDetectionGenerator:
             reader = self.__get_generator__(is_train=train)
 
         return reader.get_boxes_dimensions()
+
+    def get_class_distribution(self, train: bool = True) -> dict:
+        """
+        This function computes the number of instances per class and return them into a dictionary
+
+        Parameters
+        ----------
+        trian : bool, optional
+            _description_, by default True
+
+        Returns
+        -------
+        dict
+            _description_
+        """
+        if train:
+            reader = self.training_reader
+        else:
+            reader = self.val_reader
+
+        if reader is None:
+            reader = self.__get_generator__(is_train=train)
+
+        return reader.get_class_distribution()

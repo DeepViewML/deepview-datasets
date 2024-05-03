@@ -131,7 +131,7 @@ class PolarsDetectionReader(ObjectDetectionBaseReader):
         classes = classes[:, None]
 
         if len(bboxes) == 0:
-            return image, np.zeros(shape=(1, 5), dtype=np.float32)
+            return image, np.asarray([], dtype=np.float32)
 
         boxes = np.concatenate([bboxes, classes], axis=1)
 

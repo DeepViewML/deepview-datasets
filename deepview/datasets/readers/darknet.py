@@ -77,7 +77,7 @@ class DarknetReader(ObjectDetectionBaseReader):
         self.__current__ = -1
 
         if isinstance(images, str):
-            if not exists(images):
+            if "*" not in annotations and not exists(images):
                 raise FileNotFoundError(
                     f"\n\t - [ERROR] Images folder does not exist at: {images}"
                 )
@@ -116,20 +116,28 @@ class DarknetReader(ObjectDetectionBaseReader):
             )
 
         if isinstance(annotations, str):
-            if not exists(annotations):
+            if "*" not in annotations and not exists(annotations):
                 raise FileNotFoundError(
-                    f"\n\t - [ERROR] Images folder does not exist at: {annotations}"
+                    f"\n\t - [ERROR] Annotations folder does not exist at: {annotations}"
                 )
 
             for image in loop:
                 image_name = splitext(basename(image))[0]
-                ann_file = join(annotations, image_name + '.txt')
-
-                if not exists(ann_file):
-                    ann_file = None
+                
+                if "*" in annotations:
+                    ann_path = splitext(image)[0] + ".txt"
+                    if exists(ann_path):
+                        self.annotations.append(ann_path)
+                        ann_file = ann_path
+                    else:
+                        ann_file = None
                 else:
-                    self.annotations.append(ann_file)
-
+                    ann_file = join(annotations, image_name + '.txt')
+                    if exists(ann_file):
+                        self.annotations.append(ann_path)
+                    else:
+                        ann_file = None
+                
                 self.__storage__.append([image, ann_file])
                 self.__size__ += 1
         else:
@@ -195,6 +203,27 @@ class DarknetReader(ObjectDetectionBaseReader):
         image = np.fromfile(instance[0], dtype=np.uint8)
         return image, instance[1]
 
+    def get_class_distribution(self) -> dict:
+
+        loop = tqdm(
+            self.annotations,
+            desc="Loading class distribution",
+            colour="green",
+            bar_format='{l_bar}{bar:15}{r_bar}{bar:-15b}'
+        )
+        classes = []
+        for ann in loop:
+            data = np.genfromtxt(ann)
+            if len(data) == 0:
+                continue
+            if len(data.shape) == 1:
+                data = np.expand_dims(data, 0)
+
+            classes.append(data[:, 0])
+        classes = np.concatenate(classes, axis=0).astype(np.int32)
+        classes = np.bincount(classes)        
+        return dict(enumerate(classes))
+    
 
 class DarknetDetectionReader(DarknetReader):
 
@@ -309,16 +338,16 @@ class DarknetDetectionReader(DarknetReader):
         image = np.asarray(data, dtype=np.uint8)
 
         if ann_file is None:
-            return image, np.zeros(shape=(1, 5), dtype=np.float32)
+            return image, np.array([], dtype=np.float32)
 
         try:
             boxes = pl.read_csv(ann_file, has_header=False,
                                 separator=" ").to_numpy()
         except pl.exceptions.NoDataError:
-            return image, np.zeros(shape=(1, 5), dtype=np.float32)
+            return image, np.array([], dtype=np.float32)
 
         if len(boxes) == 0:
-            return image, np.zeros(shape=(1, 5), dtype=np.float32)
+            return image, np.array([], dtype=np.float32)
 
         if len(boxes.shape) == 1:
             boxes = boxes[None, :]
