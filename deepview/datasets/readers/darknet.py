@@ -199,7 +199,7 @@ class DarknetReader(ObjectDetectionBaseReader):
 
     def get_class_distribution(self) -> dict:
         pbar = FillingSquaresBar(
-                desc="\t Loading class",
+                desc="\t Loading classes: ",
                 size=30,
                 color="green",
                 steps=len(self.annotations)
@@ -363,7 +363,7 @@ class DarknetDetectionReader(DarknetReader):
     def get_boxes_dimensions(self) -> np.ndarray:
         
         pbar = FillingSquaresBar(
-                desc="\t Loading boxes",
+                desc="\t Loading boxes: ",
                 size=30,
                 color="green",
                 steps=len(self.annotations)
