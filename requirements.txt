@@ -1,5 +1,4 @@
 pillow>=9
 polars
-tqdm
 PyYAML
 numpy
