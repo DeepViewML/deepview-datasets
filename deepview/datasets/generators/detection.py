@@ -19,7 +19,7 @@ class BaseObjectDetectionGenerator(BaseGenerator):
     """
     Abstract class for Object Detection dataset generator
     """
-
+    
     def __getitem__(self, item: int) -> tuple:
         """
         This function returns the elemnt at position ``item``
@@ -110,7 +110,11 @@ class ObjectDetectionGenerator:
         Iterable
             An iterable containing the name of the classes
         """
-        return self.__classes__
+        if self.training_reader is not None:
+            return self.training_reader.classes
+        if self.val_reader is not None:
+            return self.val_reader.classes
+        raise RuntimeError("No reader has been intantiated yet !")
 
     def load_classes(self) -> Iterable:
         """

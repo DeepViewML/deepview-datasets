@@ -104,6 +104,13 @@ class PolarsDetectionReader(ObjectDetectionBaseReader):
         dimensions = boxes[:, [2, 3]]
         return dimensions
 
+    def get_class_distribution(self) -> dict:
+        classes = self.__annotations__.select(pl.col("class")).to_series()
+        classes = np.asarray(classes.cast(
+            self.__class_order__).to_physical(), dtype=np.int32)
+        classes = np.bincount(classes)        
+        return dict(enumerate(classes))
+
     def __getitem__(
         self,
         item: int
@@ -114,8 +121,8 @@ class PolarsDetectionReader(ObjectDetectionBaseReader):
         data = self.__inputs__.filter(pl.col("id").eq(instance_id)).select(
             pl.col("data")).collect().item().to_list()
         data = np.asarray(data, dtype=np.uint8)
-        image = Image.open(io.BytesIO(data))
-        image = np.asarray(image, dtype=np.uint8)
+        # image = Image.open(io.BytesIO(data))
+        # image = np.asarray(image, dtype=np.uint8)
 
         bboxes, classes = self.__annotations__.filter(
             pl.col("id").eq(instance_id)
@@ -131,8 +138,8 @@ class PolarsDetectionReader(ObjectDetectionBaseReader):
         classes = classes[:, None]
 
         if len(bboxes) == 0:
-            return image, np.asarray([], dtype=np.float32)
+            return data, np.asarray([], dtype=np.float32)
 
         boxes = np.concatenate([bboxes, classes], axis=1)
 
-        return image, boxes
+        return data, boxes

@@ -5,7 +5,7 @@
 
 from deepview.datasets.writers.core import BaseWriter
 from deepview.datasets.readers.core import BaseReader
-from os.path import join
+from os.path import join, dirname
 import polars as pl
 import numpy as np
 
@@ -126,6 +126,8 @@ class PolarsDetectionWriter(PolarsWriter):
         max_string_padd = len(str(len(self.__reader__)))
 
         loop = super().export()
+        from deepview.datasets.utils.progress import FillingSquaresBar
+        pbar = FillingSquaresBar(desc="\t Writing: ", size=30, steps=len(loop), color="green")
 
         for instance in loop:
             key = '{instance_id:0{width}}'.format(
@@ -157,6 +159,8 @@ class PolarsDetectionWriter(PolarsWriter):
                 ))
                 file_size_counter += 1
                 df_images = None
+            
+            pbar.update()
 
         fname = 'boxes_{file_id:0{width}}.arrow'.format(
             file_id=1, width=max_string_padd)
@@ -172,4 +176,28 @@ class PolarsDetectionWriter(PolarsWriter):
                 self.__output__,
                 fname
             ))
+        
+        
+    def export_dataset_configuration_file(
+        self, 
+        file: str, 
+        train_set: str, 
+        val_set: str
+    ) -> None:
+        
+        dataset_info = {
+            "classes": self.__reader__.classes,
+            "train": {
+                "images": join(train_set, "images_*.arrow"),
+                "annotations": join(train_set, "boxes_*.arrow")
+            },
+            "validation": {
+                "images": join(val_set, "images_*.arrow") if val_set else None,
+                "annotations": join(val_set, "boxes_*.arrow") if val_set else None
+            }
+        }
+
+        import yaml
+        with open(file, "w") as fp:
+            yaml.safe_dump(dataset_info, fp)
 

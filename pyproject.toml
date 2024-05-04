@@ -21,7 +21,7 @@ classifiers = [
 keywords = ["feed", "reader", "tutorial"]
 dependencies = [
     'pillow',
-    'polars',
+    'polars'
 ]
 requires-python = ">=3.8"
 

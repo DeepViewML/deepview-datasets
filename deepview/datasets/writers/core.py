@@ -7,7 +7,6 @@ from deepview.datasets.readers.core import BaseReader
 from os.path import exists
 from os import makedirs
 from typing import Any
-from tqdm import tqdm
 
 
 class BaseWriter(object):
@@ -70,14 +69,16 @@ class BaseWriter(object):
         Returns
         -------
         Any
-            A ``tqdm.tqdm`` iterator
+            A reader
         """
 
-        loop = tqdm(
-            self.__reader__,
-            desc="\t [INFO] Writing",
-            colour="green",
-            bar_format='{l_bar}{bar:15}{r_bar}{bar:-15b}'
-        )
+        return self.__reader__
 
-        return loop
+    def export_dataset_configuration_file(
+        self, 
+        file: str,
+        train_set: str,
+        val_set: str
+    ) -> None:
+        "This function saves the yaml file into disk"
+        raise NotImplementedError("Abstract method should be implemented in child classes")

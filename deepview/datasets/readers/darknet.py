@@ -107,7 +107,7 @@ class DarknetReader(ObjectDetectionBaseReader):
         pbar = None
         if not self.silent:
             pbar = FillingSquaresBar(
-                desc="\t [INFO] Reading",
+                desc="\t [INFO] Reading: ",
                 size=30,
                 color="green",
                 steps=len(self.images)
@@ -135,7 +135,7 @@ class DarknetReader(ObjectDetectionBaseReader):
                     pbar.update()
         else:
             pbar = FillingSquaresBar(
-                desc="\t [INFO] Reading",
+                desc="\t [INFO] Reading: ",
                 size=30,
                 color="green",
                 steps=len(self.images)
@@ -363,7 +363,7 @@ class DarknetDetectionReader(DarknetReader):
     def get_boxes_dimensions(self) -> np.ndarray:
         
         pbar = FillingSquaresBar(
-                desc="\t Loading boxes:",
+                desc="\t Loading boxes: ",
                 size=30,
                 color="green",
                 steps=len(self.annotations)
