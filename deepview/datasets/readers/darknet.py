@@ -7,10 +7,9 @@ from glob import glob
 import numpy as np
 import polars as pl
 from os.path import join, exists, splitext, basename
-from tqdm import tqdm
 from typing import Union, Iterable
 from PIL import ImageFile
-
+from deepview.datasets.utils.progress import FillingSquaresBar
 
 from deepview.datasets.readers.core import ObjectDetectionBaseReader
 
@@ -105,14 +104,13 @@ class DarknetReader(ObjectDetectionBaseReader):
             )
             exit(0)
 
-        if self.silent:
-            loop = self.images
-        else:
-            loop = tqdm(
-                self.images,
-                desc="\t [INFO] Reading",
-                colour="green",
-                bar_format='{l_bar}{bar:15}{r_bar}{bar:-15b}'
+        pbar = None
+        if not self.silent:
+            pbar = FillingSquaresBar(
+                desc="\t [INFO] Reading: ",
+                size=30,
+                color="green",
+                steps=len(self.images)
             )
 
         if isinstance(annotations, str):
@@ -121,7 +119,7 @@ class DarknetReader(ObjectDetectionBaseReader):
                     f"\n\t - [ERROR] Annotations folder does not exist at: {annotations}"
                 )
 
-            for image in loop:
+            for image in self.images:
                 image_name = splitext(basename(image))[0]
                 
                 if "*" in annotations:
@@ -140,15 +138,18 @@ class DarknetReader(ObjectDetectionBaseReader):
                 
                 self.__storage__.append([image, ann_file])
                 self.__size__ += 1
+                
+                if pbar:
+                    pbar.update()
         else:
-            loop = tqdm(
-                zip(self.images, annotations),
-                desc="\t [INFO] Reading",
-                colour="green",
-                bar_format='{l_bar}{bar:15}{r_bar}{bar:-15b}'
+            pbar = FillingSquaresBar(
+                desc="\t [INFO] Reading: ",
+                size=30,
+                color="green",
+                steps=len(self.images)
             )
 
-            for image, ann_file in loop:
+            for image, ann_file in zip(self.images, annotations):
                 if not exists(ann_file):
                     ann_file = None
                 else:
@@ -156,6 +157,7 @@ class DarknetReader(ObjectDetectionBaseReader):
 
                 self.__storage__.append([image, ann_file])
                 self.__size__ += 1
+                pbar.update()
 
         if len(self.annotations) == 0:
             print(
@@ -204,15 +206,15 @@ class DarknetReader(ObjectDetectionBaseReader):
         return image, instance[1]
 
     def get_class_distribution(self) -> dict:
-
-        loop = tqdm(
-            self.annotations,
-            desc="Loading class distribution",
-            colour="green",
-            bar_format='{l_bar}{bar:15}{r_bar}{bar:-15b}'
-        )
+        pbar = FillingSquaresBar(
+                desc="\t Loading classes: ",
+                size=30,
+                color="green",
+                steps=len(self.annotations)
+            )
+        
         classes = []
-        for ann in loop:
+        for ann in self.annotations:
             data = np.genfromtxt(ann)
             if len(data) == 0:
                 continue
@@ -220,6 +222,7 @@ class DarknetReader(ObjectDetectionBaseReader):
                 data = np.expand_dims(data, 0)
 
             classes.append(data[:, 0])
+            pbar.update()
         classes = np.concatenate(classes, axis=0).astype(np.int32)
         classes = np.bincount(classes)        
         return dict(enumerate(classes))
@@ -366,20 +369,22 @@ class DarknetDetectionReader(DarknetReader):
         )
 
     def get_boxes_dimensions(self) -> np.ndarray:
-        loop = tqdm(
-            self.annotations,
-            desc="Loading boxes dimensions",
-            colour="green",
-            bar_format='{l_bar}{bar:15}{r_bar}{bar:-15b}'
-        )
+        
+        pbar = FillingSquaresBar(
+                desc="\t Loading boxes: ",
+                size=30,
+                color="green",
+                steps=len(self.annotations)
+            )
         bboxes = []
-        for ann in loop:
+        for ann in self.annotations:
             data = np.genfromtxt(ann)
             if len(data) == 0:
                 continue
             if len(data.shape) == 1:
                 data = np.expand_dims(data, 0)
             bboxes.append(data[:, [3, 4]])
+            pbar.update()
         return np.concatenate(bboxes, axis=0)
 
 
