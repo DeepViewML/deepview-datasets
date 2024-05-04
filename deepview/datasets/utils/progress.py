@@ -44,7 +44,7 @@ class ProgressBar:
         bar = self.fill * filled_length + self.empty * (self.size - filled_length)
         print(f'\r{self.description}{self.color}{bar} {ProgressBar.ENDC}{percent}% {self.suffix}', end = "\r")
         # Print New Line on Complete
-        if self.__current__ > self.total: 
+        if self.__current__ == self.total - 1: 
             print()
 
 
