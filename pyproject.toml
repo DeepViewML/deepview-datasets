@@ -22,7 +22,6 @@ keywords = ["feed", "reader", "tutorial"]
 dependencies = [
     'pillow',
     'polars',
-    'tqdm',
 ]
 requires-python = ">=3.8"
 
@@ -38,6 +37,7 @@ packages = [
     "deepview.datasets.generators",
     "deepview.datasets.readers",
     "deepview.datasets.writers",
+    "deepview.datasets.utils",
 ]
 
 [tool.bumpver]
