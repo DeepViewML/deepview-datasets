@@ -19,8 +19,8 @@ class BaseObjectDetectionGenerator(BaseGenerator):
     """
     Abstract class for Object Detection dataset generator
     """
-    
-    def __getitem__(self, item: int) -> tuple:
+
+    def __getitem__(self, item: int) -> list:
         """
         This function returns the elemnt at position ``item``
 
@@ -34,11 +34,13 @@ class BaseObjectDetectionGenerator(BaseGenerator):
         tuple
             A tuple containing all the elements from the same instance
         """
-        data, boxes = super().__getitem__(item)
-        data = Image.open(io.BytesIO(data)).convert('RGB')
-        image = np.asarray(data, dtype=np.uint8)
+        instance = list(super().__getitem__(item))
+        if self.__use_rgb__:
+            image = Image.open(io.BytesIO(instance[0])).convert('RGB')
+            image = np.asarray(image, dtype=np.uint8)
+            instance[0] = image
 
-        return image, boxes
+        return instance
 
     def get_boxes_dimensions(self) -> Iterable:
         """
@@ -50,7 +52,7 @@ class BaseObjectDetectionGenerator(BaseGenerator):
             Any iterable containing all the dimensions on the dataset
         """
         return self.reader.get_boxes_dimensions()
-    
+
     def random(self):
         item = np.random.randint(0, len(self.__reader__) - 1)
         return self[item]
@@ -60,7 +62,10 @@ class ObjectDetectionGenerator:
     def __init__(
         self,
         from_config: str,
-        groups: Iterable = None
+        groups: Iterable = None,
+        with_rgb: bool = True,
+        with_cube: bool = False,
+        cube_extension: str = 'npy'
     ) -> None:
         """Class constructor
 
@@ -76,6 +81,9 @@ class ObjectDetectionGenerator:
         FileNotFoundError
             In case the location of the file is not found
         """
+        self.__use_rgb__ = with_rgb
+        self.__use_cube__ = with_cube
+        self.__cube_extension__ = cube_extension
 
         self.config = from_config
 
@@ -181,7 +189,10 @@ class ObjectDetectionGenerator:
                 classes=self.__classes__,
                 silent=True,
                 shuffle=is_train,
-                groups=self.groups
+                groups=self.groups,
+                with_cube=self.__use_cube__,
+                with_rgb=self.__use_rgb__,
+                cube_extension=self.__cube_extension__
             )
         return reader
 
@@ -189,6 +200,7 @@ class ObjectDetectionGenerator:
 
         dataset = self.config.get(
             "train", None) if is_train else self.config.get("val", None)
+
         if dataset is None:
             return None
 
@@ -221,7 +233,10 @@ class ObjectDetectionGenerator:
                 classes=self.__classes__,
                 silent=True,
                 shuffle=is_train,
-                groups=self.groups
+                groups=self.groups,
+                with_cube=self.__use_cube__,
+                with_rgb=self.__use_rgb__,
+                cube_extension=self.__cube_extension__
             )
 
     def __get_generator__(self, is_train: bool = True) -> BaseGenerator:
@@ -250,7 +265,10 @@ class ObjectDetectionGenerator:
 
         return BaseObjectDetectionGenerator(
             reader=reader,
-            shuffle=is_train
+            shuffle=is_train,
+            with_cube=self.__use_cube__,
+            with_rgb=self.__use_rgb__,
+            cube_extension=self.__cube_extension__
         )
 
     def get_train_generator(self) -> BaseGenerator:

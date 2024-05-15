@@ -16,7 +16,10 @@ class BaseGenerator(object):
     def __init__(
         self,
         reader:     BaseReader,
-        shuffle:    bool = False
+        shuffle:    bool = False,
+        with_rgb: bool = True,
+        with_cube: bool = False,
+        cube_extension: str = 'npy'
     ) -> None:
         """
         Class constructor
@@ -45,6 +48,10 @@ class BaseGenerator(object):
         self.__size__ = len(self.__reader__)
         self.__annotation_ids__ = list(range(self.__size__))
         self.__current__ = 0
+
+        self.__use_rgb__ = with_rgb
+        self.__use_cube__ = with_cube
+        self.__cube_extension__ = cube_extension
 
         if shuffle:
             random.shuffle(self.__annotation_ids__)

@@ -31,13 +31,19 @@ class DarknetReader(ObjectDetectionBaseReader):
         classes: Union[str, Iterable],
         silent: bool = False,
         shuffle: bool = False,
-        groups: Iterable = None
+        groups: Iterable = None,
+        with_rgb: bool = True,
+        with_cube: bool = False,
+        cube_extension: str = '*.npy'
     ) -> None:
         super().__init__(
             classes=classes,
             silent=silent,
             shuffle=shuffle,
-            groups=groups
+            groups=groups,
+            with_cube=with_cube,
+            with_rgb=with_rgb,
+            cube_extension=cube_extension
         )
         """
         Class constructor
@@ -83,67 +89,87 @@ class DarknetReader(ObjectDetectionBaseReader):
 
         self.images = []
         self.annotations = []
+        self.cubes = []
+
         self.__size__ = 0
         self.__current__ = -1
-        
+
         if not exists(images):
             raise FileNotFoundError(
                 f"\n\t - [ERROR] Images folder does not exist at: {images}"
             )
-            
+
         all_images = []
         for root, subdirs, files in os.walk(images):
             if len(subdirs) > 0:
                 filtered_groups = self.groups if self.groups is not None else subdirs
-                for group in filtered_groups: # reading groups as folders
+                for group in filtered_groups:  # reading groups as folders
                     for ext in ['*.[pP][nN][gG]',
                                 '*.[jJ][pP][gG]',
                                 '*.[jJ][pP][eE][gG]']:
-                        all_images = all_images + glob(join(images, group, ext))
+                        all_images = all_images + \
+                            glob(join(images, group, ext))
             else:
-                if self.groups is None: # no groups
+                if self.groups is None:  # no groups
                     for ext in ['*.[pP][nN][gG]',
-                            '*.[jJ][pP][gG]',
-                            '*.[jJ][pP][eE][gG]']:
+                                '*.[jJ][pP][gG]',
+                                '*.[jJ][pP][eE][gG]']:
                         all_images = all_images + glob(join(images, ext))
                 else:
-                    for group in self.groups: # reading all the groups in the same folder
+                    for group in self.groups:  # reading all the groups in the same folder
                         for ext in [f'{group}*.[pP][nN][gG]',
-                            f'{group}*.[jJ][pP][gG]',
-                            f'{group}*.[jJ][pP][eE][gG]']:
+                                    f'{group}*.[jJ][pP][gG]',
+                                    f'{group}*.[jJ][pP][eE][gG]']:
                             all_images = all_images + glob(join(images, ext))
-            break # read a single level
-        
-        if not exists(images):
+            break  # read a single level
+
+        if not exists(annotations):
             raise FileNotFoundError(
-                    f"\n\t - [ERROR] Annotations folder does not exist at: {annotations}"
+                f"\n\t - [ERROR] Annotations folder does not exist at: {annotations}"
             )
-        
-        pbar = FillingSquaresBar(desc="- Loading: ", size=30, steps=len(all_images), color='green')
+
+        pbar = FillingSquaresBar(
+            desc="- Loading: ", size=30, steps=len(all_images), color='green')
         for image in all_images:
             ann_file = splitext(basename(image))[0] + '.txt'
             ann_path = join(annotations, ann_file)
             self.images.append(image)
-            
-            if exists(ann_path): # check the direct annotation folder
-                self.__storage__.append([image, ann_path])
+
+            instance = [image]
+            if self.__use_cube__:
+                # .cube has to be included into the name --- .cube.npy
+                cube_path = f"{splitext(image)[0]}.cube.{self.__cube_extension__}"
+                if exists(cube_path):
+                    self.cubes.append(cube_path)
+                    instance.append(cube_path)
+                else:
+                    instance.append(None)
+
+            if exists(ann_path):  # check the direct annotation folder
+                instance.append(ann_path)
                 self.annotations.append(ann_path)
+                self.__storage__.append(instance)
+                pbar.update()
                 continue
-            
-            group_name  = basename(dirname(image))
+
+            group_name = basename(dirname(image))
             ann_path = join(annotations, group_name, ann_file)
+
             if exists(ann_path):
-                self.__storage__.append([image, ann_path])
+                instance.append(ann_path)
                 self.annotations.append(ann_path)
             else:
-                self.__storage__.append([image, None])
-            
+                instance.append(None)
+
+            self.__storage__.append(instance)
             pbar.update()
-            
+
         self.__current__ = 0
         self.__size__ = len(self.__storage__)
-        
-    
+        if self.__use_cube__ and len(self.cubes) == 0:
+            raise RuntimeError(
+                " This dataset does not contain any RadCube data")
+
     def __getitem__(
         self,
         item: int
@@ -179,17 +205,28 @@ class DarknetReader(ObjectDetectionBaseReader):
         instance = super().__getitem__(item)
         self.__instance_id__ = splitext(basename(instance[0]))[0]
 
+        if self.__use_rgb__ and not self.__use_cube__:
+            image = np.fromfile(instance[0], dtype=np.uint8)
+            return image, instance[-1]
+
+        if self.__use_cube__ and not self.__use_rgb__:
+            cube = np.load(instance[1])
+            return cube, instance[-1]
+
         image = np.fromfile(instance[0], dtype=np.uint8)
-        return image, instance[1]
+        cube = np.load(instance[1])
+        boxes = instance[-1]
+
+        return image, cube, boxes
 
     def get_class_distribution(self) -> dict:
         pbar = FillingSquaresBar(
-                desc="\t Loading classes: ",
-                size=30,
-                color="green",
-                steps=len(self.annotations)
-            )
-        
+            desc="\t Loading classes: ",
+            size=30,
+            color="green",
+            steps=len(self.annotations)
+        )
+
         classes = []
         for ann in self.annotations:
             data = np.genfromtxt(ann)
@@ -201,9 +238,9 @@ class DarknetReader(ObjectDetectionBaseReader):
             classes.append(data[:, 0])
             pbar.update()
         classes = np.concatenate(classes, axis=0).astype(np.int32)
-        classes = np.bincount(classes)        
+        classes = np.bincount(classes)
         return dict(enumerate(classes))
-    
+
 
 class DarknetDetectionReader(DarknetReader):
 
@@ -215,7 +252,10 @@ class DarknetDetectionReader(DarknetReader):
         silent: bool = False,
         out_format: str = "xywh",
         shuffle: bool = False,
-        groups: Iterable = None
+        groups: Iterable = None,
+        with_rgb: bool = True,
+        with_cube: bool = False,
+        cube_extension: str = '*.npy'
     ) -> None:
         """
         Class constructor
@@ -259,7 +299,10 @@ class DarknetDetectionReader(DarknetReader):
             classes=classes,
             silent=silent,
             shuffle=shuffle,
-            groups=groups
+            groups=groups,
+            with_rgb=with_rgb,
+            with_cube=with_cube,
+            cube_extension=cube_extension
         )
 
         if out_format not in ["xywh", "xyxy"]:
@@ -316,45 +359,40 @@ class DarknetDetectionReader(DarknetReader):
             A tuple containing the real values of a single instance for object
             detection. The image and bounding boxes.
         """
-        data, ann_file = super().__getitem__(item)
-        image = np.asarray(data, dtype=np.uint8)
+        instance = super().__getitem__(item)
+        boxes = None
 
-        if ann_file is None:
-            return image, np.array([], dtype=np.float32)
+        if instance[-1] is None:
+            boxes = np.array([], dtype=np.float32)
 
         try:
-            boxes = pl.read_csv(ann_file, has_header=False,
+            boxes = pl.read_csv(instance[-1], has_header=False,
                                 separator=" ").to_numpy()
         except pl.exceptions.NoDataError:
-            return image, np.array([], dtype=np.float32)
+            boxes = np.array([], dtype=np.float32)
 
-        if len(boxes) == 0:
-            return image, np.array([], dtype=np.float32)
+        # if len(boxes) == 0:
+        #     boxes = np.array([], dtype=np.float32)
 
-        if len(boxes.shape) == 1:
+        if len(boxes) > 0 and len(boxes.shape) == 1:
             boxes = boxes[None, :]
+            boxes = boxes[:, [1, 2, 3, 4, 0]].astype(np.float32)
+            if self.box_format == 'xyxy':
+                boxes = self.to_xyxy(boxes)
 
-        boxes = boxes[:, [1, 2, 3, 4, 0]].astype(np.float32)
+        instance = list(instance)
+        instance[-1] = boxes
 
-        if self.box_format == 'xywh':
-            return image, boxes
-
-        if self.box_format == 'xyxy':
-            boxes = self.to_xyxy(boxes)
-            return image, boxes
-
-        raise RuntimeError(
-            f"Something when wrong with annotation file: {ann_file}"
-        )
+        return instance
 
     def get_boxes_dimensions(self) -> np.ndarray:
-        
+
         pbar = FillingSquaresBar(
-                desc="\t Loading boxes: ",
-                size=30,
-                color="green",
-                steps=len(self.annotations)
-            )
+            desc="\t Loading boxes: ",
+            size=30,
+            color="green",
+            steps=len(self.annotations)
+        )
         bboxes = []
         for ann in self.annotations:
             data = np.genfromtxt(ann)

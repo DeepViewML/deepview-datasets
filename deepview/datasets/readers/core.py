@@ -21,7 +21,10 @@ class BaseReader(Iterable):
         classes: Union[str, Iterable],
         silent: bool = False,
         shuffle: bool = False,
-        groups: Iterable = None
+        groups: Iterable = None,
+        with_rgb: bool = True,
+        with_cube: bool = False,
+        cube_extension: str = '*.npy'
     ) -> None:
         """
         Class constructot
@@ -44,6 +47,12 @@ class BaseReader(Iterable):
             groups=[day1, day2] or groups=[day-1] or groups=None to include all of them
             This parameter is mostly used when reading raivin dataset. 
             As additional feature, the files could be grouped by folder or by filename
+        with_rgb : optional
+            This parameter specifies the input tensor is going to be read from images
+        with_cube : optional
+            This parameter specifies the input tensor is going to be read from RadarCube *.npy
+        cube_extension : optional
+            Defines the extension of the cube files
         """
 
         self.silent = silent
@@ -54,6 +63,11 @@ class BaseReader(Iterable):
         self.__instance_id__ = None
         self.__shuffle__ = shuffle
         self.__groups__ = groups
+
+        self.__use_rgb__ = with_rgb
+        self.__use_cube__ = with_cube
+        self.__cube_extension__ = cube_extension if '*.' not in cube_extension else cube_extension.split('.')[
+            1]
 
         if isinstance(classes, str):
             if classes.endswith(".txt"):
@@ -84,8 +98,7 @@ class BaseReader(Iterable):
     @property
     def groups(self) -> Iterable:
         return self.__groups__
-    
-    
+
     def get_instance_id(self):
         """
         get_instance_id This functoin 
@@ -203,7 +216,9 @@ class BaseReader(Iterable):
         return self[item]
 
     def get_class_distribution(self) -> dict:
-        raise NotImplementedError("Abstract method should be implemented bu child classes")
+        raise NotImplementedError(
+            "Abstract method should be implemented bu child classes")
+
 
 class ObjectDetectionBaseReader(BaseReader):
     """This class wraps the Object Detection Dataset Reader
@@ -230,4 +245,5 @@ class ObjectDetectionBaseReader(BaseReader):
         raise NotImplementedError("Abstract method")
 
     def get_class_distribution(self) -> dict:
-        raise NotImplementedError("Abstract method should be implemented bu child classes")
+        raise NotImplementedError(
+            "Abstract method should be implemented bu child classes")
