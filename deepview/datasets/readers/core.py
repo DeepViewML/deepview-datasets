@@ -20,7 +20,8 @@ class BaseReader(Iterable):
         self,
         classes: Union[str, Iterable],
         silent: bool = False,
-        shuffle: bool = False
+        shuffle: bool = False,
+        groups: Iterable = None
     ) -> None:
         """
         Class constructot
@@ -34,7 +35,15 @@ class BaseReader(Iterable):
         silent : bool, optional
             Whether printing to the console or not, by default False
         shuffle : bool, optional
-            This parameter force data to be shuffled everytime the iterator ends, Default to False            
+            This parameter force data to be shuffled everytime the iterator ends, Default to False    
+        groups : Iterable, optional
+            This parameter is used to identify candidate subfolders when are present. E.g. 
+            /data/images/
+                - day-1
+                - day-2
+            groups=[day1, day2] or groups=[day-1] or groups=None to include all of them
+            This parameter is mostly used when reading raivin dataset. 
+            As additional feature, the files could be grouped by folder or by filename
         """
 
         self.silent = silent
@@ -44,6 +53,7 @@ class BaseReader(Iterable):
         self.__classes__ = []
         self.__instance_id__ = None
         self.__shuffle__ = shuffle
+        self.__groups__ = groups
 
         if isinstance(classes, str):
             if classes.endswith(".txt"):
@@ -71,6 +81,11 @@ class BaseReader(Iterable):
         else:
             self.__classes__ = classes
 
+    @property
+    def groups(self) -> Iterable:
+        return self.__groups__
+    
+    
     def get_instance_id(self):
         """
         get_instance_id This functoin 

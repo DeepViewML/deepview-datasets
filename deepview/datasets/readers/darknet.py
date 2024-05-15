@@ -6,11 +6,11 @@
 from glob import glob
 import numpy as np
 import polars as pl
-from os.path import join, exists, splitext, basename
+from os.path import join, exists, splitext, basename, dirname
 from typing import Union, Iterable
 from PIL import ImageFile
 from deepview.datasets.utils.progress import FillingSquaresBar
-
+import os
 from deepview.datasets.readers.core import ObjectDetectionBaseReader
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -31,11 +31,13 @@ class DarknetReader(ObjectDetectionBaseReader):
         classes: Union[str, Iterable],
         silent: bool = False,
         shuffle: bool = False,
+        groups: Iterable = None
     ) -> None:
         super().__init__(
             classes=classes,
             silent=silent,
-            shuffle=shuffle
+            shuffle=shuffle,
+            groups=groups
         )
         """
         Class constructor
@@ -57,7 +59,16 @@ class DarknetReader(ObjectDetectionBaseReader):
         
         shuffle : bool, optional
             This parameter force data to be shuffled everytime the iterator ends, Default to False
-
+        
+        groups : Iterable, optional
+            This parameter is used to identify candidate subfolders when are present. E.g. 
+            /data/images/
+                - day-1
+                - day-2
+            groups=[day1, day2] or groups=[day-1] or groups=None to include all of them
+            This parameter is mostly used when reading raivin dataset. 
+            As additional feature, the files could be grouped by folder or by filename
+            
         Raises
         ------
         FileNotFoundError
@@ -74,99 +85,65 @@ class DarknetReader(ObjectDetectionBaseReader):
         self.annotations = []
         self.__size__ = 0
         self.__current__ = -1
-
-        if isinstance(images, str):
-            if "*" not in annotations and not exists(images):
-                raise FileNotFoundError(
-                    f"\n\t - [ERROR] Images folder does not exist at: {images}"
-                )
-
-            image_files = []
-            for ext in ['*.[pP][nN][gG]',
-                        '*.[jJ][pP][gG]',
-                        '*.[jJ][pP][eE][gG]']:
-                partial = glob(join(images, ext))
-                image_files = image_files + partial
-            self.images = image_files
-        else:
-            for image in images:
-                if exists(image):
-                    self.images.append(image)
-
-                if not exists(image) and not self.silent:
-                    print(
-                        f"\t - [WARNING] File does not exist: {image}"
-                    )
-
-        if len(self.images) == 0:
-            print(
-                f"\n\t - [WARNING]  Aborting reading because no images were found in parameter ``{images}``"
+        
+        if not exists(images):
+            raise FileNotFoundError(
+                f"\n\t - [ERROR] Images folder does not exist at: {images}"
             )
-            exit(0)
-
-        pbar = None
-        if not self.silent:
-            pbar = FillingSquaresBar(
-                desc="\t [INFO] Reading: ",
-                size=30,
-                color="green",
-                steps=len(self.images)
-            )
-
-        if isinstance(annotations, str):
-            if "*" not in annotations and not exists(annotations):
-                raise FileNotFoundError(
+            
+        all_images = []
+        for root, subdirs, files in os.walk(images):
+            if len(subdirs) > 0:
+                filtered_groups = self.groups if self.groups is not None else subdirs
+                for group in filtered_groups: # reading groups as folders
+                    for ext in ['*.[pP][nN][gG]',
+                                '*.[jJ][pP][gG]',
+                                '*.[jJ][pP][eE][gG]']:
+                        all_images = all_images + glob(join(images, group, ext))
+            else:
+                if self.groups is None: # no groups
+                    for ext in ['*.[pP][nN][gG]',
+                            '*.[jJ][pP][gG]',
+                            '*.[jJ][pP][eE][gG]']:
+                        all_images = all_images + glob(join(images, ext))
+                else:
+                    for group in self.groups: # reading all the groups in the same folder
+                        for ext in [f'{group}*.[pP][nN][gG]',
+                            f'{group}*.[jJ][pP][gG]',
+                            f'{group}*.[jJ][pP][eE][gG]']:
+                            all_images = all_images + glob(join(images, ext))
+            break # read a single level
+        
+        if not exists(images):
+            raise FileNotFoundError(
                     f"\n\t - [ERROR] Annotations folder does not exist at: {annotations}"
-                )
-
-            for image in self.images:
-                image_name = splitext(basename(image))[0]
-                
-                if "*" in annotations:
-                    ann_path = splitext(image)[0] + ".txt"
-                    if exists(ann_path):
-                        self.annotations.append(ann_path)
-                        ann_file = ann_path
-                    else:
-                        ann_file = None
-                else:
-                    ann_file = join(annotations, image_name + '.txt')
-                    if exists(ann_file):
-                        self.annotations.append(ann_file)
-                    else:
-                        ann_file = None
-                
-                self.__storage__.append([image, ann_file])
-                self.__size__ += 1
-                
-                if pbar:
-                    pbar.update()
-        else:
-            pbar = FillingSquaresBar(
-                desc="\t [INFO] Reading: ",
-                size=30,
-                color="green",
-                steps=len(self.images)
             )
-
-            for image, ann_file in zip(self.images, annotations):
-                if not exists(ann_file):
-                    ann_file = None
-                else:
-                    self.annotations.append(ann_file)
-
-                self.__storage__.append([image, ann_file])
-                self.__size__ += 1
-                pbar.update()
-
-        if len(self.annotations) == 0:
-            print(
-                f"\n\t - [WARNING]  Aborting reading because no annotation files were found in parameter ``{annotations}``"
-            )
-            exit(0)
-
+        
+        pbar = FillingSquaresBar(desc="- Loading: ", size=30, steps=len(all_images), color='green')
+        for image in all_images:
+            ann_file = splitext(basename(image))[0] + '.txt'
+            ann_path = join(annotations, ann_file)
+            self.images.append(image)
+            
+            if exists(ann_path): # check the direct annotation folder
+                self.__storage__.append([image, ann_path])
+                self.annotations.append(ann_path)
+                continue
+            
+            group_name  = basename(dirname(image))
+            ann_path = join(annotations, group_name, ann_file)
+            if exists(ann_path):
+                self.__storage__.append([image, ann_path])
+                self.annotations.append(ann_path)
+            else:
+                self.__storage__.append([image, None])
+            
+            pbar.update()
+            
         self.__current__ = 0
-
+        self.__size__ = len(self.__storage__)
+        
+    
     def __getitem__(
         self,
         item: int
@@ -237,7 +214,8 @@ class DarknetDetectionReader(DarknetReader):
         classes: Union[str, Iterable],
         silent: bool = False,
         out_format: str = "xywh",
-        shuffle: bool = False
+        shuffle: bool = False,
+        groups: Iterable = None
     ) -> None:
         """
         Class constructor
@@ -280,7 +258,8 @@ class DarknetDetectionReader(DarknetReader):
             annotations=annotations,
             classes=classes,
             silent=silent,
-            shuffle=shuffle
+            shuffle=shuffle,
+            groups=groups
         )
 
         if out_format not in ["xywh", "xyxy"]:
@@ -396,7 +375,8 @@ class UltralyticsDetectionReader(DarknetDetectionReader):
         silent: bool = False,
         out_format: str = "xywh",
         path: str = None,
-        shuffle: bool = False
+        shuffle: bool = False,
+        groups: Iterable = None
     ) -> None:
         """
         Class constructor
@@ -465,5 +445,6 @@ class UltralyticsDetectionReader(DarknetDetectionReader):
             classes=classes,
             silent=silent,
             out_format=out_format,
-            shuffle=shuffle
+            shuffle=shuffle,
+            groups=groups
         )

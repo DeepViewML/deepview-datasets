@@ -59,7 +59,8 @@ class BaseObjectDetectionGenerator(BaseGenerator):
 class ObjectDetectionGenerator:
     def __init__(
         self,
-        from_config: str
+        from_config: str,
+        groups: Iterable = None
     ) -> None:
         """Class constructor
 
@@ -100,6 +101,7 @@ class ObjectDetectionGenerator:
         self.__classes__ = self.load_classes()
         self.training_reader = None
         self.val_reader = None
+        self.groups = groups
 
     @property
     def classes(self) -> Iterable:
@@ -178,7 +180,8 @@ class ObjectDetectionGenerator:
                 annotations=annotations,
                 classes=self.__classes__,
                 silent=True,
-                shuffle=is_train
+                shuffle=is_train,
+                groups=self.groups
             )
         return reader
 
@@ -195,7 +198,8 @@ class ObjectDetectionGenerator:
                 images=dataset,
                 classes=self.__classes__,
                 path=path,
-                shuffle=is_train
+                shuffle=is_train,
+                groups=self.groups
             )
         else:
             basename = os.path.basename(self.config_absolute_path)
@@ -216,7 +220,8 @@ class ObjectDetectionGenerator:
                 annotations=annotations,
                 classes=self.__classes__,
                 silent=True,
-                shuffle=is_train
+                shuffle=is_train,
+                groups=self.groups
             )
 
     def __get_generator__(self, is_train: bool = True) -> BaseGenerator:
