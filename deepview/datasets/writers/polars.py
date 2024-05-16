@@ -127,14 +127,15 @@ class PolarsDetectionWriter(PolarsWriter):
 
         loop = super().export()
         from deepview.datasets.utils.progress import FillingSquaresBar
-        pbar = FillingSquaresBar(desc="\t Writing: ", size=30, steps=len(loop), color="green")
+        pbar = FillingSquaresBar(
+            desc="- Writing: ", size=30, steps=len(loop), color="green")
 
         for instance in loop:
             key = '{instance_id:0{width}}'.format(
                 instance_id=instance_id_counter, width=max_string_padd)
-            
+
             instance_id_counter += 1
-            
+
             images, annotations = self.write_instance(
                 instance, key
             )
@@ -159,7 +160,7 @@ class PolarsDetectionWriter(PolarsWriter):
                 ))
                 file_size_counter += 1
                 df_images = None
-            
+
             pbar.update()
 
         fname = 'boxes_{file_id:0{width}}.arrow'.format(
@@ -176,15 +177,14 @@ class PolarsDetectionWriter(PolarsWriter):
                 self.__output__,
                 fname
             ))
-        
-        
+
     def export_dataset_configuration_file(
-        self, 
-        file: str, 
-        train_set: str, 
+        self,
+        file: str,
+        train_set: str,
         val_set: str
     ) -> None:
-        
+
         dataset_info = {
             "classes": self.__reader__.classes,
             "train": {
@@ -200,4 +200,3 @@ class PolarsDetectionWriter(PolarsWriter):
         import yaml
         with open(file, "w") as fp:
             yaml.safe_dump(dataset_info, fp)
-
