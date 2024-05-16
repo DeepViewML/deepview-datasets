@@ -64,8 +64,8 @@ class ObjectDetectionGenerator:
         from_config: str,
         groups: Iterable = None,
         with_rgb: bool = True,
-        with_cube: bool = False,
-        cube_extension: str = 'npy'
+        with_radar: bool = False,
+        radar_extension: str = 'npy'
     ) -> None:
         """Class constructor
 
@@ -82,8 +82,8 @@ class ObjectDetectionGenerator:
             In case the location of the file is not found
         """
         self.__use_rgb__ = with_rgb
-        self.__use_cube__ = with_cube
-        self.__cube_extension__ = cube_extension
+        self.__use_radar__ = with_radar
+        self.__radar_extension__ = radar_extension
 
         self.config = from_config
 
@@ -190,9 +190,9 @@ class ObjectDetectionGenerator:
                 silent=True,
                 shuffle=is_train,
                 groups=self.groups,
-                with_cube=self.__use_cube__,
+                with_radar=self.__use_radar__,
                 with_rgb=self.__use_rgb__,
-                cube_extension=self.__cube_extension__
+                radar_extension=self.__radar_extension__
             )
         return reader
 
@@ -234,9 +234,9 @@ class ObjectDetectionGenerator:
                 silent=True,
                 shuffle=is_train,
                 groups=self.groups,
-                with_cube=self.__use_cube__,
+                with_radar=self.__use_radar__,
                 with_rgb=self.__use_rgb__,
-                cube_extension=self.__cube_extension__
+                radar_extension=self.__radar_extension__
             )
 
     def __get_generator__(self, is_train: bool = True) -> BaseGenerator:
@@ -266,9 +266,9 @@ class ObjectDetectionGenerator:
         return BaseObjectDetectionGenerator(
             reader=reader,
             shuffle=is_train,
-            with_cube=self.__use_cube__,
+            with_radar=self.__use_radar__,
             with_rgb=self.__use_rgb__,
-            cube_extension=self.__cube_extension__
+            radar_extension=self.__radar_extension__
         )
 
     def get_train_generator(self) -> BaseGenerator:

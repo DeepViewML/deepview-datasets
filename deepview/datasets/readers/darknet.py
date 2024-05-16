@@ -33,17 +33,17 @@ class DarknetReader(ObjectDetectionBaseReader):
         shuffle: bool = False,
         groups: Iterable = None,
         with_rgb: bool = True,
-        with_cube: bool = False,
-        cube_extension: str = '*.npy'
+        with_radar: bool = False,
+        radar_extension: str = '*.npy'
     ) -> None:
         super().__init__(
             classes=classes,
             silent=silent,
             shuffle=shuffle,
             groups=groups,
-            with_cube=with_cube,
+            with_radar=with_radar,
             with_rgb=with_rgb,
-            cube_extension=cube_extension
+            radar_extension=radar_extension
         )
         """
         Class constructor
@@ -136,9 +136,9 @@ class DarknetReader(ObjectDetectionBaseReader):
             self.images.append(image)
 
             instance = [image]
-            if self.__use_cube__:
+            if self.__use_radar__:
                 # .cube has to be included into the name --- .cube.npy
-                cube_path = f"{splitext(image)[0]}.cube.{self.__cube_extension__}"
+                cube_path = f"{splitext(image)[0]}.cube.{self.__radar_extension__}"
                 if exists(cube_path):
                     self.cubes.append(cube_path)
                     instance.append(cube_path)
@@ -166,7 +166,7 @@ class DarknetReader(ObjectDetectionBaseReader):
 
         self.__current__ = 0
         self.__size__ = len(self.__storage__)
-        if self.__use_cube__ and len(self.cubes) == 0:
+        if self.__use_radar__ and len(self.cubes) == 0:
             raise RuntimeError(
                 " This dataset does not contain any RadCube data")
 
@@ -205,11 +205,11 @@ class DarknetReader(ObjectDetectionBaseReader):
         instance = super().__getitem__(item)
         self.__instance_id__ = splitext(basename(instance[0]))[0]
 
-        if self.__use_rgb__ and not self.__use_cube__:
+        if self.__use_rgb__ and not self.__use_radar__:
             image = np.fromfile(instance[0], dtype=np.uint8)
             return image, instance[-1]
 
-        if self.__use_cube__ and not self.__use_rgb__:
+        if self.__use_radar__ and not self.__use_rgb__:
             cube = np.load(instance[1])
             return cube, instance[-1]
 
@@ -254,8 +254,8 @@ class DarknetDetectionReader(DarknetReader):
         shuffle: bool = False,
         groups: Iterable = None,
         with_rgb: bool = True,
-        with_cube: bool = False,
-        cube_extension: str = '*.npy'
+        with_radar: bool = False,
+        radar_extension: str = '*.npy'
     ) -> None:
         """
         Class constructor
@@ -301,8 +301,8 @@ class DarknetDetectionReader(DarknetReader):
             shuffle=shuffle,
             groups=groups,
             with_rgb=with_rgb,
-            with_cube=with_cube,
-            cube_extension=cube_extension
+            with_radar=with_radar,
+            radar_extension=radar_extension
         )
 
         if out_format not in ["xywh", "xyxy"]:

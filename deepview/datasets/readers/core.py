@@ -23,8 +23,8 @@ class BaseReader(Iterable):
         shuffle: bool = False,
         groups: Iterable = None,
         with_rgb: bool = True,
-        with_cube: bool = False,
-        cube_extension: str = '*.npy'
+        with_radar: bool = False,
+        radar_extension: str = '*.npy'
     ) -> None:
         """
         Class constructot
@@ -49,10 +49,10 @@ class BaseReader(Iterable):
             As additional feature, the files could be grouped by folder or by filename
         with_rgb : optional
             This parameter specifies the input tensor is going to be read from images
-        with_cube : optional
+        with_radar : optional
             This parameter specifies the input tensor is going to be read from RadarCube *.npy
-        cube_extension : optional
-            Defines the extension of the cube files
+        radar_extension : optional
+            Defines the extension of the radar files
         """
 
         self.silent = silent
@@ -65,8 +65,8 @@ class BaseReader(Iterable):
         self.__groups__ = groups
 
         self.__use_rgb__ = with_rgb
-        self.__use_cube__ = with_cube
-        self.__cube_extension__ = cube_extension if '*.' not in cube_extension else cube_extension.split('.')[
+        self.__use_radar__ = with_radar
+        self.__radar_extension__ = radar_extension if '*.' not in radar_extension else radar_extension.split('.')[
             1]
 
         if isinstance(classes, str):

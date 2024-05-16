@@ -18,8 +18,8 @@ class BaseGenerator(object):
         reader:     BaseReader,
         shuffle:    bool = False,
         with_rgb: bool = True,
-        with_cube: bool = False,
-        cube_extension: str = 'npy'
+        with_radar: bool = False,
+        radar_extension: str = 'npy'
     ) -> None:
         """
         Class constructor
@@ -50,8 +50,8 @@ class BaseGenerator(object):
         self.__current__ = 0
 
         self.__use_rgb__ = with_rgb
-        self.__use_cube__ = with_cube
-        self.__cube_extension__ = cube_extension
+        self.__use_radar__ = with_radar
+        self.__radar_extension__ = radar_extension
 
         if shuffle:
             random.shuffle(self.__annotation_ids__)
