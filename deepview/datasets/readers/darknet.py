@@ -371,11 +371,8 @@ class DarknetDetectionReader(DarknetReader):
         except pl.exceptions.NoDataError:
             boxes = np.array([], dtype=np.float32)
 
-        # if len(boxes) == 0:
-        #     boxes = np.array([], dtype=np.float32)
-
-        if len(boxes) > 0 and len(boxes.shape) == 1:
-            boxes = boxes[None, :]
+        if len(boxes) > 0:
+            boxes = boxes[None, :].reshape(-1, 5)
             boxes = boxes[:, [1, 2, 3, 4, 0]].astype(np.float32)
             if self.box_format == 'xyxy':
                 boxes = self.to_xyxy(boxes)
