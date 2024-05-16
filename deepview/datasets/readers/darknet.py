@@ -368,7 +368,7 @@ class DarknetDetectionReader(DarknetReader):
         try:
             boxes = pl.read_csv(instance[-1], has_header=False,
                                 separator=" ").to_numpy()
-        except pl.exceptions.NoDataError:
+        except Exception:
             boxes = np.array([], dtype=np.float32)
 
         if len(boxes) > 0:
