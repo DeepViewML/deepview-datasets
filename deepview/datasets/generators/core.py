@@ -19,6 +19,7 @@ class BaseGenerator(object):
         shuffle:    bool = False,
         with_rgb: bool = True,
         with_radar: bool = False,
+        with_shapes: bool = False,
         radar_extension: str = 'npy'
     ) -> None:
         """
@@ -52,6 +53,7 @@ class BaseGenerator(object):
         self.__use_rgb__ = with_rgb
         self.__use_radar__ = with_radar
         self.__radar_extension__ = radar_extension
+        self.__use_shapes__ = with_shapes
 
         if shuffle:
             random.shuffle(self.__annotation_ids__)

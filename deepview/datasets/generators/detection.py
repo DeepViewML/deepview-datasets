@@ -35,10 +35,9 @@ class BaseObjectDetectionGenerator(BaseGenerator):
             A tuple containing all the elements from the same instance
         """
         instance = list(super().__getitem__(item))
-        if self.__use_rgb__:
-            image = Image.open(io.BytesIO(instance[0])).convert('RGB')
-            image = np.asarray(image, dtype=np.uint8)
-            instance[0] = image
+        image = Image.open(io.BytesIO(instance[0])).convert('RGB')
+        image = np.asarray(image, dtype=np.uint8)
+        instance[0] = image
 
         return instance
 

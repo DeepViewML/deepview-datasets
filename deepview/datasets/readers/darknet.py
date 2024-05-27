@@ -34,6 +34,8 @@ class DarknetReader(ObjectDetectionBaseReader):
         groups: Iterable = None,
         with_rgb: bool = True,
         with_radar: bool = False,
+        with_shapes: bool = False,
+        with_distances: bool = False,
         radar_extension: str = '*.npy'
     ) -> None:
         super().__init__(
@@ -43,6 +45,8 @@ class DarknetReader(ObjectDetectionBaseReader):
             groups=groups,
             with_radar=with_radar,
             with_rgb=with_rgb,
+            with_shapes=with_shapes,
+            with_distances=with_distances,
             radar_extension=radar_extension
         )
         """
@@ -93,6 +97,7 @@ class DarknetReader(ObjectDetectionBaseReader):
 
         self.__size__ = 0
         self.__current__ = -1
+        self.__ann_extension__ = '.txt' if not with_distances else '.3dtxt'
 
         if not exists(images):
             raise FileNotFoundError(
@@ -131,7 +136,7 @@ class DarknetReader(ObjectDetectionBaseReader):
         pbar = FillingSquaresBar(
             desc="- Loading: ", size=30, steps=len(all_images), color='green')
         for image in all_images:
-            ann_file = splitext(basename(image))[0] + '.txt'
+            ann_file = splitext(basename(image))[0] + self.__ann_extension__
             ann_path = join(annotations, ann_file)
             self.images.append(image)
 
@@ -255,6 +260,8 @@ class DarknetDetectionReader(DarknetReader):
         groups: Iterable = None,
         with_rgb: bool = True,
         with_radar: bool = False,
+        with_shapes: bool = False,
+        with_distances: bool = False,
         radar_extension: str = '*.npy'
     ) -> None:
         """
@@ -302,6 +309,8 @@ class DarknetDetectionReader(DarknetReader):
             groups=groups,
             with_rgb=with_rgb,
             with_radar=with_radar,
+            with_shapes=with_shapes,
+            with_distances=with_distances,
             radar_extension=radar_extension
         )
 
@@ -328,8 +337,9 @@ class DarknetDetectionReader(DarknetReader):
         """
 
         boxes = np.concatenate([
-            boxes[:, [0, 1]] - boxes[: [2, 2]] * 0.5,
-            boxes[:, [0, 1]] + boxes[: [2, 2]] * 0.5,
+            boxes[:, [0, 1]] - boxes[: [2, 3]] * 0.5,
+            boxes[:, [0, 1]] + boxes[: [2, 3]] * 0.5,
+            boxes[:, 4:]
         ], axis=1)
 
         return boxes

@@ -24,6 +24,8 @@ class BaseReader(Iterable):
         groups: Iterable = None,
         with_rgb: bool = True,
         with_radar: bool = False,
+        with_shapes: bool = False,
+        with_distances: bool = False,
         radar_extension: str = '*.npy'
     ) -> None:
         """
@@ -51,6 +53,9 @@ class BaseReader(Iterable):
             This parameter specifies the input tensor is going to be read from images
         with_radar : optional
             This parameter specifies the input tensor is going to be read from RadarCube *.npy
+        with_shape : optional
+            This parameter enables the shape as an additional object within the instance tuple.
+            Always before the annotations
         radar_extension : optional
             Defines the extension of the radar files
         """
@@ -68,6 +73,8 @@ class BaseReader(Iterable):
         self.__use_radar__ = with_radar
         self.__radar_extension__ = radar_extension if '*.' not in radar_extension else radar_extension.split('.')[
             1]
+        self.__use_shapes__ = with_shapes
+        self.__use_distances__ = with_distances
 
         if isinstance(classes, str):
             if classes.endswith(".txt"):
