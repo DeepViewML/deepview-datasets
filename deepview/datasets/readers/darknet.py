@@ -388,6 +388,11 @@ class DarknetDetectionReader(DarknetReader):
         sizes = bbmax_-bbmin
         mins2d, size2d = bbmin.transpose(), sizes.transpose()
 
+        mask = []
+        for i, cls in enumerate(boxes[:, 0:1].astype(np.int32)):
+            if cls[0] in self.__classes__:
+                mask.append(i)
+
         boxes = np.concatenate([
             boxes[:, 0:1],
             mins2d + size2d * 0.5,
@@ -395,7 +400,7 @@ class DarknetDetectionReader(DarknetReader):
             boxes[:, 1:2]
         ], axis=-1)
 
-        return boxes
+        return boxes[mask]
 
     def __getitem__(
         self,
