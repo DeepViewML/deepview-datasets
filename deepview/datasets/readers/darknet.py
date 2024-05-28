@@ -471,6 +471,9 @@ class DarknetDetectionReader(DarknetReader):
                 continue
             if len(data.shape) == 1:
                 data = np.expand_dims(data, 0)
+            if self.__use_distances__:
+                data = self.get_boxes_2d_from_3d(data)
+
             bboxes.append(data[:, [3, 4]])
             pbar.update()
         return np.concatenate(bboxes, axis=0)
