@@ -344,6 +344,59 @@ class DarknetDetectionReader(DarknetReader):
 
         return boxes
 
+    def get_boxes_2d_from_3d(self, boxes, width=1920, height=1080):
+        cam_mtx = np.array([
+            [1260/1920, 0, 960/1920,],
+            [0, 1260/1080, 540/1080,],
+            [0, 0, 1,],
+        ])
+
+        # Converts lzxydwh (label, z, x, y, depth, width, height) coulmn vector into (x_min, y_min, z_min) column vector
+        zxydwh2xyzmin = np.array([
+            [0, 0, 1, 0, 0, -0.5, 0],
+            [0, 0, 0, 1, 0, 0, -0.5],
+            [0, 1, 0, 0, 0, 0, 0],
+        ])
+
+        # Converts lzxydwh (label, z, x, y, depth, width, height) coulmn vector into (x_max, y_max, z_max) column vector
+        zxydwh2xyzmax = np.array([
+            [0, 0, 1, 0, 0, 0.5, 0],
+            [0, 0, 0, 1, 0, 0, 0.5],
+            [0, 1, 0, 0, 0, 0, 0],
+        ])
+
+        # Converts (x, y, 1) column vector from camera coordinate system to the image coordinate system.
+        coord_cnvt = np.array([
+            [-1, 0, 1],
+            [0, -1, 1],
+            [0, 0, 1],
+        ])
+        xyzmin = zxydwh2xyzmin @ boxes.transpose()
+        xyzmax = zxydwh2xyzmax @ boxes.transpose()
+        bbmin = cam_mtx @ xyzmin
+        bbmin /= bbmin[2, :]
+        bbmin = coord_cnvt @ bbmin
+        bbmin = bbmin[:2, :]
+
+        bbmax = cam_mtx @ xyzmax
+        bbmax /= bbmax[2, :]
+        bbmax = coord_cnvt @ bbmax
+        bbmax = bbmax[:2, :]
+
+        bbmax_ = np.maximum(bbmax, bbmin)
+        bbmin = np.minimum(bbmax, bbmin)
+        sizes = bbmax_-bbmin
+        mins2d, size2d = bbmin.transpose(), sizes.transpose()
+
+        boxes = np.concatenate([
+            boxes[:, 0:1],
+            mins2d + size2d * 0.5,
+            size2d,
+            boxes[:, 1:2]
+        ], axis=-1)
+
+        return boxes
+
     def __getitem__(
         self,
         item
@@ -382,8 +435,14 @@ class DarknetDetectionReader(DarknetReader):
             boxes = np.array([], dtype=np.float32)
 
         if len(boxes) > 0:
-            boxes = boxes[None, :].reshape(-1, 5)
-            boxes = boxes[:, [1, 2, 3, 4, 0]].astype(np.float32)
+            if self.__use_distances__:
+                boxes = self.get_boxes_2d_from_3d(boxes)
+                boxes = boxes[None, :].reshape(-1, 6)
+                boxes = boxes[:, [1, 2, 3, 4, 5, 0]].astype(np.float32)
+            else:
+                boxes = boxes[None, :].reshape(-1, 5)
+                boxes = boxes[:, [1, 2, 3, 4, 0]].astype(np.float32)
+
             if self.box_format == 'xyxy':
                 boxes = self.to_xyxy(boxes)
 

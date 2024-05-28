@@ -64,7 +64,9 @@ class ObjectDetectionGenerator:
         groups: Iterable = None,
         with_rgb: bool = True,
         with_radar: bool = False,
-        radar_extension: str = 'npy'
+        with_distances: bool = False,
+        radar_extension: str = 'npy',
+        class_mask: Iterable = None
     ) -> None:
         """Class constructor
 
@@ -83,6 +85,8 @@ class ObjectDetectionGenerator:
         self.__use_rgb__ = with_rgb
         self.__use_radar__ = with_radar
         self.__radar_extension__ = radar_extension
+        self.__use_distances__ = with_distances
+        self.__class_mask__ = class_mask
 
         self.config = from_config
 
@@ -147,13 +151,13 @@ class ObjectDetectionGenerator:
         if len(classes) > 0:
             self.dataset_format = "modelpack-2.x"
             self.load_reader = self.__storage_from_modelpack__
-            return classes
+            return classes if self.__class_mask__ is None else self.__class_mask__
 
         classes = self.config.get("names", [])
         if len(classes) > 0:
             self.dataset_format = "ultralytics"
             self.load_reader = self.__storage_from_ultralytics__
-            return classes
+            return classes if self.__class_mask__ is None else self.__class_mask__
 
         raise RuntimeError(
             "Dataset format was not autodetected. It is does not follow neither\
@@ -191,6 +195,7 @@ class ObjectDetectionGenerator:
                 groups=self.groups,
                 with_radar=self.__use_radar__,
                 with_rgb=self.__use_rgb__,
+                with_distances=self.__use_distances__,
                 radar_extension=self.__radar_extension__
             )
         return reader
@@ -235,6 +240,7 @@ class ObjectDetectionGenerator:
                 groups=self.groups,
                 with_radar=self.__use_radar__,
                 with_rgb=self.__use_rgb__,
+                with_distances=self.__use_distances__,
                 radar_extension=self.__radar_extension__
             )
 
@@ -267,6 +273,7 @@ class ObjectDetectionGenerator:
             shuffle=is_train,
             with_radar=self.__use_radar__,
             with_rgb=self.__use_rgb__,
+            with_distances=self.__use_distances__,
             radar_extension=self.__radar_extension__
         )
 
