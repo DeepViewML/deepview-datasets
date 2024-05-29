@@ -99,6 +99,16 @@ class DarknetReader(ObjectDetectionBaseReader):
         self.__current__ = -1
         self.__ann_extension__ = '.txt' if not with_distances else '.3dtxt'
 
+        if isinstance(classes, dict):
+            self.__classes__ = []
+            self.__classes_to_ids__ = []
+            for key, value in classes.items():
+                self.__classes__.append(value)
+                self.__classes_to_ids__.append(int(key))
+        else:
+            self.__classes_to_ids__ = [
+                self.__classes__.index(cls) for cls in classes
+            ]
         if not exists(images):
             raise FileNotFoundError(
                 f"\n\t - [ERROR] Images folder does not exist at: {images}"
@@ -390,7 +400,7 @@ class DarknetDetectionReader(DarknetReader):
 
         mask = []
         for i, cls in enumerate(boxes[:, 0:1].astype(np.int32)):
-            if cls[0] in self.__classes__:
+            if cls[0] in self.__classes_to_ids__:
                 mask.append(i)
 
         boxes = np.concatenate([
