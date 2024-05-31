@@ -35,9 +35,45 @@ class BaseObjectDetectionGenerator(BaseGenerator):
             A tuple containing all the elements from the same instance
         """
         instance = list(super().__getitem__(item))
-        image = Image.open(io.BytesIO(instance[0])).convert('RGB')
-        image = np.asarray(image, dtype=np.uint8)
-        instance[0] = image
+        if self.__use_rgb__:
+            image = Image.open(io.BytesIO(instance[0])).convert('RGB')
+            image = np.asarray(image, dtype=np.uint8)
+            instance[0] = image
+
+        return instance
+
+    def get_boxes_dimensions(self) -> Iterable:
+        """
+        get_boxes_dimensions returns the list of bounding boxes dimensions from the entire dataset in the way of (width, height)
+
+        Returns
+        -------
+        Iterable
+            Any iterable containing all the dimensions on the dataset
+        """
+        return self.reader.get_boxes_dimensions()
+
+    def random(self):
+        item = np.random.randint(0, len(self.__reader__) - 1)
+        return self[item]
+
+
+class ObjectDetectionGeneratorFromRadar(BaseObjectDetectionGenerator):
+    def __getitem__(self, item: int) -> list:
+        """
+        This function returns the elemnt at position ``item``
+
+        Parameters
+        ----------
+        item : int
+            Instance id
+
+        Returns
+        -------
+        tuple
+            A tuple containing all the elements from the same instance
+        """
+        instance = list(super().__getitem__(item))
 
         return instance
 
@@ -268,14 +304,24 @@ class ObjectDetectionGenerator:
         else:
             self.val_reader = reader
 
-        return BaseObjectDetectionGenerator(
-            reader=reader,
-            shuffle=is_train,
-            with_radar=self.__use_radar__,
-            with_rgb=self.__use_rgb__,
-            with_distances=self.__use_distances__,
-            radar_extension=self.__radar_extension__
-        )
+        if self.__use_rgb__:
+            return BaseObjectDetectionGenerator(
+                reader=reader,
+                shuffle=is_train,
+                with_radar=self.__use_radar__,
+                with_rgb=self.__use_rgb__,
+                with_distances=self.__use_distances__,
+                radar_extension=self.__radar_extension__
+            )
+        elif self.__use_radar__:
+            return ObjectDetectionGeneratorFromRadar(
+                reader=reader,
+                shuffle=is_train,
+                with_radar=self.__use_radar__,
+                with_rgb=self.__use_rgb__,
+                with_distances=self.__use_distances__,
+                radar_extension=self.__radar_extension__
+            )
 
     def get_train_generator(self) -> BaseGenerator:
         """This function creates the Train iterator and return it
