@@ -7,10 +7,9 @@ from glob import glob
 import numpy as np
 import polars as pl
 from os.path import join, exists, splitext, basename
-from typing import Union, Iterable
-from PIL import ImageFile
+from typing import Union, Iterable, List
+from PIL import ImageFile, Image
 from deepview.datasets.utils.progress import FillingSquaresBar
-
 from deepview.datasets.readers.core import ObjectDetectionBaseReader
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -31,6 +30,9 @@ class DarknetReader(ObjectDetectionBaseReader):
         classes: Union[str, Iterable],
         silent: bool = False,
         shuffle: bool = False,
+        class_mask: set = None,
+        look_for_files: Iterable[List] = None,
+        annotations_as: str = '*.txt'
     ) -> None:
         super().__init__(
             classes=classes,
@@ -57,6 +59,10 @@ class DarknetReader(ObjectDetectionBaseReader):
         
         shuffle : bool, optional
             This parameter force data to be shuffled everytime the iterator ends, Default to False
+        
+        class_mask : set, optional
+            A python set containing the indices of those classes user 
+            wants to filter from the whole dataset
 
         Raises
         ------
@@ -74,6 +80,22 @@ class DarknetReader(ObjectDetectionBaseReader):
         self.annotations = []
         self.__size__ = 0
         self.__current__ = -1
+        self.__class_mask__ = [x if isinstance(
+            x, int) else classes.index(x) for x in class_mask
+        ] if class_mask is not None else None
+
+        self.__classes__ = [
+            self.__classes__[x] for x in class_mask
+        ] if class_mask is not None else self.__classes__
+
+        self.__extensions__ = [
+            '*.[pP][nN][gG]', '*.[jJ][pP][gG]',
+            '*.[jJ][pP][eE][gG]'
+        ] if look_for_files is None else [
+            x if x.startswith("*.") else f"*.{x}" for x in look_for_files
+        ]
+        self.__annotations_extension__ = annotations_as.split('.')[1] if annotations_as.startswith(
+            "*.") else annotations_as if annotations_as.startswith('.') else f".{annotations_as}"
 
         if isinstance(images, str):
             if "*" not in annotations and not exists(images):
@@ -82,9 +104,7 @@ class DarknetReader(ObjectDetectionBaseReader):
                 )
 
             image_files = []
-            for ext in ['*.[pP][nN][gG]',
-                        '*.[jJ][pP][gG]',
-                        '*.[jJ][pP][eE][gG]']:
+            for ext in self.__extensions__:
                 partial = glob(join(images, ext))
                 image_files = image_files + partial
             self.images = image_files
@@ -121,24 +141,26 @@ class DarknetReader(ObjectDetectionBaseReader):
 
             for image in self.images:
                 image_name = splitext(basename(image))[0]
-                
+
                 if "*" in annotations:
-                    ann_path = splitext(image)[0] + ".txt"
+                    ann_path = splitext(image)[0] + \
+                        self.__annotations_extension__
                     if exists(ann_path):
                         self.annotations.append(ann_path)
                         ann_file = ann_path
                     else:
                         ann_file = None
                 else:
-                    ann_file = join(annotations, image_name + '.txt')
+                    ann_file = join(annotations, image_name +
+                                    self.__annotations_extension__)
                     if exists(ann_file):
                         self.annotations.append(ann_file)
                     else:
                         ann_file = None
-                
+
                 self.__storage__.append([image, ann_file])
                 self.__size__ += 1
-                
+
                 if pbar:
                     pbar.update()
         else:
@@ -202,17 +224,17 @@ class DarknetReader(ObjectDetectionBaseReader):
         instance = super().__getitem__(item)
         self.__instance_id__ = splitext(basename(instance[0]))[0]
 
-        image = np.fromfile(instance[0], dtype=np.uint8)
+        image = Image.open(instance[0]).convert('RGB')
         return image, instance[1]
 
     def get_class_distribution(self) -> dict:
         pbar = FillingSquaresBar(
-                desc="\t Loading classes: ",
-                size=30,
-                color="green",
-                steps=len(self.annotations)
-            )
-        
+            desc="\t Loading classes: ",
+            size=30,
+            color="green",
+            steps=len(self.annotations)
+        )
+
         classes = []
         for ann in self.annotations:
             data = np.genfromtxt(ann)
@@ -224,9 +246,9 @@ class DarknetReader(ObjectDetectionBaseReader):
             classes.append(data[:, 0])
             pbar.update()
         classes = np.concatenate(classes, axis=0).astype(np.int32)
-        classes = np.bincount(classes)        
+        classes = np.bincount(classes)
         return dict(enumerate(classes))
-    
+
 
 class DarknetDetectionReader(DarknetReader):
 
@@ -237,7 +259,10 @@ class DarknetDetectionReader(DarknetReader):
         classes: Union[str, Iterable],
         silent: bool = False,
         out_format: str = "xywh",
-        shuffle: bool = False
+        shuffle: bool = False,
+        class_mask: set = None,
+        look_for_files: Iterable[List] = None,
+        annotations_as: str = '*.txt'
     ) -> None:
         """
         Class constructor
@@ -280,7 +305,10 @@ class DarknetDetectionReader(DarknetReader):
             annotations=annotations,
             classes=classes,
             silent=silent,
-            shuffle=shuffle
+            shuffle=shuffle,
+            class_mask=class_mask,
+            look_for_files=look_for_files,
+            annotations_as=annotations_as
         )
 
         if out_format not in ["xywh", "xyxy"]:
@@ -306,8 +334,9 @@ class DarknetDetectionReader(DarknetReader):
         """
 
         boxes = np.concatenate([
-            boxes[:, [0, 1]] - boxes[: [2, 2]] * 0.5,
-            boxes[:, [0, 1]] + boxes[: [2, 2]] * 0.5,
+            boxes[:, [0, 1]] - boxes[: [2, 3]] * 0.5,
+            boxes[:, [0, 1]] + boxes[: [2, 3]] * 0.5,
+            boxes[:, 3:4]
         ], axis=1)
 
         return boxes
@@ -344,17 +373,22 @@ class DarknetDetectionReader(DarknetReader):
             return image, np.array([], dtype=np.float32)
 
         try:
-            boxes = pl.read_csv(ann_file, has_header=False,
-                                separator=" ").to_numpy()
+            boxes = pl.read_csv(
+                ann_file,
+                has_header=False,
+                separator=" "
+            )
+            if self.__class_mask__ is not None:
+                boxes = boxes.filter(
+                    pl.col("column_1").is_in(self.__class_mask__))
+            boxes = boxes.to_numpy()
         except pl.exceptions.NoDataError:
             return image, np.array([], dtype=np.float32)
 
         if len(boxes) == 0:
             return image, np.array([], dtype=np.float32)
 
-        if len(boxes.shape) == 1:
-            boxes = boxes[None, :]
-
+        boxes = boxes.reshape(-1, 5)
         boxes = boxes[:, [1, 2, 3, 4, 0]].astype(np.float32)
 
         if self.box_format == 'xywh':
@@ -369,13 +403,12 @@ class DarknetDetectionReader(DarknetReader):
         )
 
     def get_boxes_dimensions(self) -> np.ndarray:
-        
         pbar = FillingSquaresBar(
-                desc="\t Loading boxes: ",
-                size=30,
-                color="green",
-                steps=len(self.annotations)
-            )
+            desc="\t Loading boxes: ",
+            size=30,
+            color="green",
+            steps=len(self.annotations)
+        )
         bboxes = []
         for ann in self.annotations:
             data = np.genfromtxt(ann)
