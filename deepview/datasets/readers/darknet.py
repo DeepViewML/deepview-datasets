@@ -32,7 +32,7 @@ class DarknetReader(ObjectDetectionBaseReader):
         shuffle: bool = False,
         class_mask: set = None,
         look_for_files: Iterable[List] = None,
-        annotations_as: str = '*.txt'
+        annotations_as: str = '.txt'
     ) -> None:
         super().__init__(
             classes=classes,
@@ -141,18 +141,25 @@ class DarknetReader(ObjectDetectionBaseReader):
 
             for image in self.images:
                 image_name = splitext(basename(image))[0]
+                ann_path = None
 
                 if "*" in annotations:
-                    ann_path = splitext(image)[0] + \
-                        self.__annotations_extension__
-                    if exists(ann_path):
+                    if self.__annotations_extension__ is None:
+                        ann_path = splitext(image)[0] + self.__annotations_extension__ 
+                    else:
+                        for ext in self.__extensions__:
+                            iname = image.split(ext.replace("*", ""))[0] + self.__annotations_extension__
+                            if exists(iname):
+                                ann_path = iname
+                                break
+
+                    if ann_path and exists(ann_path):
                         self.annotations.append(ann_path)
                         ann_file = ann_path
-                    else:
+                    else:                        
                         ann_file = None
                 else:
-                    ann_file = join(annotations, image_name +
-                                    self.__annotations_extension__)
+                    ann_file = join(annotations, image_name + self.__annotations_extension__)
                     if exists(ann_file):
                         self.annotations.append(ann_file)
                     else:

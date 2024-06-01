@@ -147,9 +147,6 @@ class BaseReader(Iterable):
             A tuple containing all the files that represent a single instance
 
         """
-        if self.__shuffle__ and item < 1:
-            random.shuffle(self.__storage__)
-
         return self.__storage__[item]
 
     def __next__(self):
