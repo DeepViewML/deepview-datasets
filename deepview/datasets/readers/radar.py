@@ -15,7 +15,8 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         out_format: str = "xywh",
         shuffle: bool = False,
         class_mask: set = None,
-        from_radar: bool = True
+        from_radar: bool = True,
+        fusion: bool = False
     ) -> None:
         super().__init__(
             images,
@@ -33,6 +34,7 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         self.__bev__ = bev
         self.__load_annotations__ = self.load_bev if bev else self.load_2d_boxes_from_3d_boxes
         self.__load_input__ = self.load_cube if from_radar else self.load_rgb
+        self.__getitem__ = self.load_instance if not fusion else self.load_fusion_instance
 
     def load_cube(self, file: str):
         return np.load(file)
@@ -42,6 +44,68 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
             Image.open(file).conve('RGB'),
             dtype=np.uint8
         )
+    
+    def load_instance(self, item):
+        input_file, ann_file = self.__storage__[item]
+        
+        input_data = self.__load_input__(input_file)
+
+        if ann_file is None:
+            return input_data, np.array([], dtype=np.float32)
+
+        try:
+            boxes = pl.read_csv(
+                ann_file,
+                has_header=False,
+                separator=" "
+            )
+            if self.__class_mask__ is not None:
+                boxes = boxes.filter(
+                    pl.col("column_1").is_in(self.__class_mask__))
+            boxes = boxes.to_numpy()
+        except pl.exceptions.NoDataError:
+            return input_data, np.array([], dtype=np.float32)
+
+        if len(boxes) == 0:
+            return input_data, np.array([], dtype=np.float32)
+
+        boxes = self.__load_annotations__(boxes)
+        boxes = boxes.reshape(-1, 5)
+        boxes = boxes.astype(np.float32)
+
+        return input_data, boxes
+    
+    def load_fusion_instance(self, item):
+        input_file, ann_file = self.__storage__[item]        
+        input_data = self.__load_input__(input_file)
+
+        if ann_file is None:
+            return input_data, np.array([], dtype=np.float32)
+
+        try:
+            boxes = pl.read_csv(
+                ann_file,
+                has_header=False,
+                separator=" "
+            )
+            if self.__class_mask__ is not None:
+                boxes = boxes.filter(
+                    pl.col("column_1").is_in(self.__class_mask__))
+            boxes = boxes.to_numpy()
+        except pl.exceptions.NoDataError:
+            return input_data, np.array([], dtype=np.float32)
+
+        if len(boxes) == 0:
+            return input_data, np.array([], dtype=np.float32)
+
+        boxes = self.__load_annotations__(boxes)
+        boxes = boxes.reshape(-1, 5)
+        boxes = boxes.astype(np.float32)
+
+        image = ann_file.replace(".3dtxt", ".jpeg")
+        image = self.load_rgb(image)
+
+        return image, input_data, boxes
 
     def load_bev(self, boxes):
         # given: class, z, x, y, l, w, h -> [x, z, w, l, class]
@@ -101,35 +165,7 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
 
         return boxes
 
-    def __getitem__(self, item) -> tuple:
-        input_file, ann_file = self.__storage__[item]
         
-        input_data = self.__load_input__(input_file)
-
-        if ann_file is None:
-            return input_data, np.array([], dtype=np.float32)
-
-        try:
-            boxes = pl.read_csv(
-                ann_file,
-                has_header=False,
-                separator=" "
-            )
-            if self.__class_mask__ is not None:
-                boxes = boxes.filter(
-                    pl.col("column_1").is_in(self.__class_mask__))
-            boxes = boxes.to_numpy()
-        except pl.exceptions.NoDataError:
-            return input_data, np.array([], dtype=np.float32)
-
-        if len(boxes) == 0:
-            return input_data, np.array([], dtype=np.float32)
-
-        boxes = self.__load_annotations__(boxes)
-        boxes = boxes.reshape(-1, 5)
-        boxes = boxes.astype(np.float32)
-
-        return input_data, boxes
 
 
 class DarknetDetectionRaivin3D(DarknetDetectionReader):
