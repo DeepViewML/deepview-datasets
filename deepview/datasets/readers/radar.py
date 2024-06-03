@@ -3,7 +3,7 @@ from typing import Iterable, Union
 from deepview.datasets.readers.darknet import DarknetDetectionReader
 import numpy as np
 import polars as pl
-
+from PIL import Image, ImageFile
 class DarknetDetectionRaivin2D(DarknetDetectionReader):
     def __init__(
         self,
@@ -14,7 +14,8 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         silent: bool = False,
         out_format: str = "xywh",
         shuffle: bool = False,
-        class_mask: set = None
+        class_mask: set = None,
+        from_radar: bool = True
     ) -> None:
         super().__init__(
             images,
@@ -24,17 +25,29 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
             out_format,
             shuffle,
             class_mask,
-            look_for_files=["*.cube.npy"], # has to be a list or tuple or a set...
+            look_for_files=["*.cube.npy"] if from_radar else ["*.jpeg"], # has to be a list or tuple or a set...
             annotations_as='.3dtxt' 
         )
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+
         self.__bev__ = bev
         self.__load_annotations__ = self.load_bev if bev else self.load_2d_boxes_from_3d_boxes
+        self.__load_input__ = self.load_cube if from_radar else self.load_rgb
+
+    def load_cube(self, file: str):
+        return np.load(file)
+    
+    def load_rgb(self, file):
+        return np.asarray(
+            Image.open(file).conve('RGB'),
+            dtype=np.uint8
+        )
 
     def load_bev(self, boxes):
         # given: class, z, x, y, l, w, h -> [x, z, w, l, class]
         boxes = boxes.reshape(-1, 7)[:, [2, 1, 5, 4, 0]]
         return boxes
-
+        
 
     def load_2d_boxes_from_3d_boxes(self, boxes):
         cam_mtx = np.array([
@@ -89,12 +102,12 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         return boxes
 
     def __getitem__(self, item) -> tuple:
-        radar, ann_file = self.__storage__[item]
-
-        rad_data = np.load(radar)
+        input_file, ann_file = self.__storage__[item]
         
+        input_data = self.__load_input__(input_file)
+
         if ann_file is None:
-            return rad_data, np.array([], dtype=np.float32)
+            return input_data, np.array([], dtype=np.float32)
 
         try:
             boxes = pl.read_csv(
@@ -107,16 +120,16 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
                     pl.col("column_1").is_in(self.__class_mask__))
             boxes = boxes.to_numpy()
         except pl.exceptions.NoDataError:
-            return rad_data, np.array([], dtype=np.float32)
+            return input_data, np.array([], dtype=np.float32)
 
         if len(boxes) == 0:
-            return rad_data, np.array([], dtype=np.float32)
+            return input_data, np.array([], dtype=np.float32)
 
         boxes = self.__load_annotations__(boxes)
         boxes = boxes.reshape(-1, 5)
         boxes = boxes.astype(np.float32)
 
-        return rad_data, boxes
+        return input_data, boxes
 
 
 class DarknetDetectionRaivin3D(DarknetDetectionReader):
