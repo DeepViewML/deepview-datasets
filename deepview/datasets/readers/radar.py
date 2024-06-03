@@ -45,7 +45,7 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
     
     def load_rgb(self, file):
         return np.asarray(
-            Image.open(file).conve('RGB'),
+            Image.open(file).convert('RGB'),
             dtype=np.uint8
         )
     
