@@ -4,6 +4,7 @@ from deepview.datasets.readers.darknet import DarknetDetectionReader
 import numpy as np
 import polars as pl
 from PIL import Image, ImageFile
+
 class DarknetDetectionRaivin2D(DarknetDetectionReader):
     def __init__(
         self,
@@ -34,8 +35,11 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         self.__bev__ = bev
         self.__load_annotations__ = self.load_bev if bev else self.load_2d_boxes_from_3d_boxes
         self.__load_input__ = self.load_cube if from_radar else self.load_rgb
-        self.__getitem__ = self.load_instance if not fusion else self.load_fusion_instance
+        self.get_item = self.load_instance if not fusion else self.load_fusion_instance
 
+    def __getitem__(self, item) -> tuple:
+        return self.get_item(item)
+    
     def load_cube(self, file: str):
         return np.load(file)
     
