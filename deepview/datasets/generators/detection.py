@@ -34,12 +34,8 @@ class BaseObjectDetectionGenerator(BaseGenerator):
         tuple
             A tuple containing all the elements from the same instance
         """
-        data, boxes = super().__getitem__(item)
-        data = Image.open(io.BytesIO(data)).convert('RGB')
-        image = np.asarray(data, dtype=np.uint8)
-
-        return image, boxes
-
+        return  super().__getitem__(item)
+        
     def get_boxes_dimensions(self) -> Iterable:
         """
         get_boxes_dimensions returns the list of bounding boxes dimensions from the entire dataset in the way of (width, height)

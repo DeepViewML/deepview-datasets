@@ -159,7 +159,7 @@ class DarknetReader(ObjectDetectionBaseReader):
                     else:                        
                         ann_file = None
                 else:
-                    ann_file = join(annotations, image_name + self.__annotations_extension__)
+                    ann_file = join(annotations, image_name + f".{self.__annotations_extension__}")
                     if exists(ann_file):
                         self.annotations.append(ann_file)
                     else:

@@ -4,6 +4,7 @@ from deepview.datasets.readers.darknet import DarknetDetectionReader
 import numpy as np
 import polars as pl
 from PIL import Image, ImageFile
+from os.path import exists
 
 class DarknetDetectionRaivin2D(DarknetDetectionReader):
     def __init__(
@@ -36,12 +37,17 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         self.__load_annotations__ = self.load_bev if bev else self.load_2d_boxes_from_3d_boxes
         self.__load_input__ = self.load_cube if from_radar else self.load_rgb
         self.get_item = self.load_instance if not fusion else self.load_fusion_instance
+        
+        self.input_channels = 16
+        self.range_bins = 192
+        self.doppler_bins = 128
 
     def __getitem__(self, item) -> tuple:
         return self.get_item(item)
     
     def load_cube(self, file: str):
-        return np.load(file)
+        cube = np.load(file).astype(np.float32)        
+        return  cube
     
     def load_rgb(self, file):
         return np.asarray(
@@ -82,9 +88,12 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
     def load_fusion_instance(self, item):
         input_file, ann_file = self.__storage__[item]        
         input_data = self.__load_input__(input_file)
+        image = ann_file.replace(".3dtxt", ".jpeg")
+        image = self.load_rgb(image)
+        
 
         if ann_file is None:
-            return input_data, np.array([], dtype=np.float32)
+            return image, input_data, np.array([], dtype=np.float32)
 
         try:
             boxes = pl.read_csv(
@@ -97,23 +106,23 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
                     pl.col("column_1").is_in(self.__class_mask__))
             boxes = boxes.to_numpy()
         except pl.exceptions.NoDataError:
-            return input_data, np.array([], dtype=np.float32)
+            return image, input_data, np.array([], dtype=np.float32)
 
         if len(boxes) == 0:
-            return input_data, np.array([], dtype=np.float32)
+            return image, input_data, np.array([], dtype=np.float32)
 
         boxes = self.__load_annotations__(boxes)
         boxes = boxes.reshape(-1, 5)
         boxes = boxes.astype(np.float32)
 
-        image = ann_file.replace(".3dtxt", ".jpeg")
-        image = self.load_rgb(image)
-
+        
         return image, input_data, boxes
 
     def load_bev(self, boxes):
         # given: class, z, x, y, l, w, h -> [x, z, w, l, class]
-        boxes = boxes.reshape(-1, 7)[:, [2, 1, 5, 4, 0]]
+        boxes = boxes.reshape(-1, 7)
+        boxes = boxes[:, (0, 2, 1, 3, 5, 4, 6)]
+        boxes = boxes[:, [1, 2, 4, 5, 0]]
         return boxes
         
 
