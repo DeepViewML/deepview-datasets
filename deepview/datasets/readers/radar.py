@@ -88,8 +88,13 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
     def load_fusion_instance(self, item):
         input_file, ann_file = self.__storage__[item]        
         input_data = self.__load_input__(input_file)
-        image = ann_file.replace(".3dtxt", ".jpeg")
-        image = self.load_rgb(image)
+        file = ann_file.replace(".3dtxt", ".jpeg")
+        
+        if exists(file):
+            image = self.load_rgb(file)
+        else:
+            image = np.zeros(shape=(640, 640, 3), dtype=np.uint8)
+            # print(f"missing: {file}")
         
 
         if ann_file is None:
@@ -179,7 +184,3 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         return boxes
 
         
-
-
-class DarknetDetectionRaivin3D(DarknetDetectionReader):
-    pass

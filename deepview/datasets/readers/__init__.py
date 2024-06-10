@@ -7,5 +7,4 @@ from deepview.datasets.readers.core import BaseReader, ObjectDetectionBaseReader
 from deepview.datasets.readers.darknet import DarknetReader, \
     DarknetDetectionReader, UltralyticsDetectionReader
 from deepview.datasets.readers.arrow import PolarsDetectionReader
-from deepview.datasets.readers.radar import DarknetDetectionRaivin2D, \
-    DarknetDetectionRaivin3D
+from deepview.datasets.readers.radar import DarknetDetectionRaivin2D
