@@ -231,7 +231,9 @@ class DarknetReader(ObjectDetectionBaseReader):
         instance = super().__getitem__(item)
         self.__instance_id__ = splitext(basename(instance[0]))[0]
 
-        image = Image.open(instance[0]).convert('RGB')
+        # image = Image.open(instance[0]).convert('RGB')
+        image = pyvips.Image.new_from_file(instance[0]).numpy()
+        
         return image, instance[1]
 
     def get_class_distribution(self) -> dict:
@@ -507,3 +509,5 @@ class UltralyticsDetectionReader(DarknetDetectionReader):
             out_format=out_format,
             shuffle=shuffle
         )
+
+

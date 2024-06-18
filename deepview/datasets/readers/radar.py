@@ -18,7 +18,8 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         shuffle: bool = False,
         class_mask: set = None,
         from_radar: bool = True,
-        fusion: bool = False
+        fusion: bool = False,
+        with_distances: bool = False
     ) -> None:
         super().__init__(
             images,
@@ -29,7 +30,7 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
             shuffle,
             class_mask,
             look_for_files=["*.cube.npy"] if from_radar else ["*.jpeg"], # has to be a list or tuple or a set...
-            annotations_as='.3dtxt' 
+            annotations_as='.3dtxt'
         )
         ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -37,11 +38,14 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         self.__load_annotations__ = self.load_bev if bev else self.load_2d_boxes_from_3d_boxes
         self.__load_input__ = self.load_cube if from_radar else self.load_rgb
         self.get_item = self.load_instance if not fusion else self.load_fusion_instance
+        self.num_features = 6 if with_distances else 5
+        self.use_distances = with_distances
         
         self.input_channels = 16
         self.range_bins = 192
         self.doppler_bins = 128
-
+    
+   
     def __getitem__(self, item) -> tuple:
         return self.get_item(item)
     
@@ -80,7 +84,7 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
             return input_data, np.array([], dtype=np.float32)
 
         boxes = self.__load_annotations__(boxes)
-        boxes = boxes.reshape(-1, 5)
+        boxes = boxes.reshape(-1, self.num_features)
         boxes = boxes.astype(np.float32)
 
         return input_data, boxes
@@ -117,7 +121,7 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
             return image, input_data, np.array([], dtype=np.float32)
 
         boxes = self.__load_annotations__(boxes)
-        boxes = boxes.reshape(-1, 5)
+        boxes = boxes.reshape(-1, self.num_features)
         boxes = boxes.astype(np.float32)
 
         
@@ -127,7 +131,10 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         # given: class, z, x, y, l, w, h -> [x, z, w, l, class]
         boxes = boxes.reshape(-1, 7)
         boxes = boxes[:, (0, 2, 1, 3, 5, 4, 6)]
-        boxes = boxes[:, [1, 2, 4, 5, 0]]
+        if self.use_distances:
+            boxes = boxes[:, [1, 2, 4, 5, 0]]
+        else:
+            boxes = boxes[:, [1, 2, 4, 5, 1, 0]]
         return boxes
         
 
@@ -175,11 +182,19 @@ class DarknetDetectionRaivin2D(DarknetDetectionReader):
         sizes = bbmax_- bbmin
         mins2d, size2d = bbmin.transpose(), sizes.transpose()
 
-        boxes = np.concatenate([
-            mins2d + size2d * 0.5,
-            size2d,
-            boxes[:, 0:1],
-        ], axis=-1)
+        if self.use_distances:
+            boxes = np.concatenate([
+                mins2d + size2d * 0.5,
+                size2d,
+                boxes[:, 1:2],
+                boxes[:, 0:1],
+            ], axis=-1)
+        else:
+            boxes = np.concatenate([
+                mins2d + size2d * 0.5,
+                size2d,
+                boxes[:, 0:1],
+            ], axis=-1)
 
         return boxes
 
