@@ -54,7 +54,7 @@ class FusionDataset(DarknetDetectionReader):
         ])
     
     def get_bev(self, ann):
-        return ann[:, [2, 1, 5, 4, 1, 0]] # xc, yc, w, h, distance, class
+        return ann[:, [1, 2, 4, 5, 1, 0]] # xc, yc, w, h, distance, class
     
     def get_2d_box(self, ann):
         
@@ -91,6 +91,7 @@ class FusionDataset(DarknetDetectionReader):
         
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
+            print(ann)
             ann = np.genfromtxt(ann)
         
         if ann.shape[0] == 0:
@@ -128,11 +129,12 @@ class FusionDataset(DarknetDetectionReader):
             ann = ann.reshape(-1, 7)
                     
             if self.__bev__:
-                ann, self.get_bev(ann)
+                ann = self.get_bev(ann)
             else:
                 ann = self.get_2d_box(ann)       
             
-            storage.append(ann[:, 2:4]) 
+            storage.append([0.025, 0.025]) 
+            
             pbar.update()
         return np.concatenate(storage, axis=0)
                 
