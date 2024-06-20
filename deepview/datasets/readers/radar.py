@@ -104,6 +104,39 @@ class FusionDataset(DarknetDetectionReader):
         return image, cube, self.get_2d_box(ann)        
         
 
+    def get_boxes_dimensions(self) -> np.ndarray:
+        from deepview.datasets.utils.progress import FillingSquaresBar
+        pbar = FillingSquaresBar(
+            desc=" - Loading boxes: ",
+            size=30,
+            color="green",
+            steps=len(self.storage)
+        )
+        
+        storage = []
+        
+        for instance in self.storage:
+            ann = instance[-1]
+        
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                ann = np.genfromtxt(ann)
+            
+            if ann.shape[0] == 0:
+                continue
+           
+            ann = ann.reshape(-1, 7)
+                    
+            if self.__bev__:
+                ann, self.get_bev(ann)
+            else:
+                ann = self.get_2d_box(ann)       
+            
+            storage.append(ann[:, 2:4]) 
+            pbar.update()
+        return np.concatenate(storage, axis=0)
+                
+    
 class DarknetDetectionRaivin2D(DarknetDetectionReader):
     def __init__(
         self,
