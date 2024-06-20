@@ -133,7 +133,7 @@ class FusionDataset(DarknetDetectionReader):
             else:
                 ann = self.get_2d_box(ann)       
             
-            storage.append([0.025, 0.025]) 
+            storage.append([[0.025, 0.025]]) 
             
             pbar.update()
         return np.concatenate(storage, axis=0)
