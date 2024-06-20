@@ -1,10 +1,108 @@
 
-from typing import Iterable, Union
+from typing import Iterable, List, Union
 from deepview.datasets.readers.darknet import DarknetDetectionReader
 import numpy as np
 import polars as pl
 from PIL import Image, ImageFile
-from os.path import exists
+from os.path import exists, splitext
+import warnings
+
+
+class FusionDataset(DarknetDetectionReader):
+    def __init__(
+        self, images: str, 
+        annotations: str, 
+        classes: Iterable, 
+        silent: bool = False, 
+        out_format: str = "xywh", 
+        shuffle: bool = False, 
+        class_mask: set = None, 
+        bev: bool = True
+    ) -> None:
+        super().__init__(images, annotations, classes, silent, out_format, shuffle, class_mask, None, '.3dtxt')
+        self.__storage__ = [
+            (
+                image, splitext(image)[0] + '.cube.npy', ann
+            ) for image, ann in self.storage
+        ]
+        self.__bev__ = bev
+        self.cam_mtx = np.array([
+            [1260/1920, 0, 960/1920,],
+            [0, 1260/1080, 540/1080,],
+            [0, 0, 1,],
+        ])
+
+        # Converts lzxydwh (label, z, x, y, depth, width, height) coulmn vector into (x_min, y_min, z_min) column vector
+        self.zxydwh2xyzmin = np.array([
+            [0, 0, 1, 0, 0, -0.5, 0],
+            [0, 0, 0, 1, 0, 0, -0.5],
+            [0, 1, 0, 0, 0, 0, 0],
+        ])
+
+        # Converts lzxydwh (label, z, x, y, depth, width, height) coulmn vector into (x_max, y_max, z_max) column vector
+        self.zxydwh2xyzmax = np.array([
+            [0, 0, 1, 0, 0, 0.5, 0],
+            [0, 0, 0, 1, 0, 0, 0.5],
+            [0, 1, 0, 0, 0, 0, 0],
+        ])
+
+        # Converts (x, y, 1) column vector from camera coordinate system to the image coordinate system.
+        self.coord_cnvt = np.array([
+            [-1, 0, 1],
+            [0, -1, 1],
+            [0, 0, 1],
+        ])
+    
+    def get_bev(self, ann):
+        return ann[:, [2, 1, 5, 4, 1, 0]] # xc, yc, w, h, distance, class
+    
+    def get_2d_box(self, ann):
+        
+        xyzmin = self.zxydwh2xyzmin @ ann.transpose()
+        xyzmax = self.zxydwh2xyzmax @ ann.transpose()
+        bbmin = self.cam_mtx @ xyzmin
+        bbmin /= bbmin[2, :]
+        bbmin = self.coord_cnvt @ bbmin
+        bbmin = bbmin[:2, :]
+
+        bbmax = self.cam_mtx @ xyzmax
+        bbmax /= bbmax[2, :]
+        bbmax = self.coord_cnvt @ bbmax
+        bbmax = bbmax[:2, :]
+
+        bbmax_ = np.maximum(bbmax, bbmin)
+        bbmin = np.minimum(bbmax, bbmin)
+        sizes = bbmax_- bbmin
+        mins2d, size2d = bbmin.transpose(), sizes.transpose()
+
+        return np.concatenate([
+                mins2d + size2d * 0.5,
+                size2d,
+                ann[:, 1:2],
+                ann[:, 0:1],
+            ], axis=-1)
+        
+    
+    def __getitem__(self, item) -> tuple:
+        img, cube, ann = self.storage[item]
+        
+        image = np.asarray(Image.open(img).convert('RGB'))
+        cube = np.load(cube)
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            ann = np.genfromtxt(ann)
+        
+        if ann.shape[0] == 0:
+            return image, cube, ann
+        
+        ann = ann.reshape(-1, 7)
+                
+        if self.__bev__:
+            return image, cube, self.get_bev(ann)
+                
+        return image, cube, self.get_2d_box(ann)        
+        
 
 class DarknetDetectionRaivin2D(DarknetDetectionReader):
     def __init__(

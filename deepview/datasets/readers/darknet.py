@@ -145,10 +145,10 @@ class DarknetReader(ObjectDetectionBaseReader):
 
                 if "*" in annotations:
                     if self.__annotations_extension__ is None:
-                        ann_path = splitext(image)[0] + self.__annotations_extension__ 
+                        ann_path = splitext(image)[0] + '.txt'
                     else:
                         for ext in self.__extensions__:
-                            iname = image.split(ext.replace("*", ""))[0] + self.__annotations_extension__
+                            iname = splitext(image)[0]  + self.__annotations_extension__
                             if exists(iname):
                                 ann_path = iname
                                 break
